@@ -42,7 +42,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check Available Environments
-        run: echo "Listing changed files."
+        id: check
+        uses: subhamay-bhattacharyya-gha/check-environments-action@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   check-branch-issue:
     name: 🔎 Branch Issue
