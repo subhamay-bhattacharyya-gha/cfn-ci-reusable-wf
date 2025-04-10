@@ -8,6 +8,11 @@ description: |
 on:
   workflow_call:
     inputs:
+      environment:
+        description: "Environment to deploy to (e.g., dev, prod)."
+        required: true
+        type: string
+        default: ci
       aws-role-arn:
         description: "ARN of the role to be assumed."
         required: true
@@ -32,6 +37,7 @@ on:
         description: "Snyk token for authentication."
         required: false
         type: string
+
 
 permissions:
   id-token: write
