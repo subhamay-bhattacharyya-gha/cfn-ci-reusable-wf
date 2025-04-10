@@ -13,16 +13,16 @@ on:
         required: true
         type: string
         default: ci
-      aws-role-arn:
-        description: "ARN of the role to be assumed."
-        required: true
-        type: string
-        default: arn:aws:iam::637423502513:role/subhamay-github-oidc-role
-      aws-region:
-        description: "AWS region where the services will be deployed."
-        required: true
-        type: string
-        default: us-east-1
+      # aws-role-arn:
+      #   description: "ARN of the role to be assumed."
+      #   required: true
+      #   type: string
+      #   default: arn:aws:iam::637423502513:role/subhamay-github-oidc-role
+      # aws-region:
+      #   description: "AWS region where the services will be deployed."
+      #   required: true
+      #   type: string
+      #   default: us-east-1
       cfn-template-file:
         description: "CloudFormation template file name."
         required: true
@@ -86,12 +86,17 @@ jobs:
   cfn-validate:
     name: ✔️ CFN Validate
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     needs:
       [check-environments, check-branch-issue, repo-changes, detect-services]
     steps:
       - name: Configure AWS Credentials
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
         run: |
           echo "Configuring AWS credentials."
+          echo "AWS Role ARN: ${{ vars.AWS_ROLE_ARN }}"
+          echo "AWS Region: ${{ vars.AWS_REGION }}"
         # uses: aws-actions/configure-aws-credentials@v3
         # with:
         #   role-to-assume: ${{ inputs.aws-role-arn }}
