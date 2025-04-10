@@ -41,7 +41,7 @@ jobs:
         id: check
         uses: subhamay-bhattacharyya-gha/check-environments-action@main
         with:
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   check-branch-issue:
     name: 🔎 Branch Issue
