@@ -91,8 +91,6 @@ jobs:
       [check-environments, check-branch-issue, repo-changes, detect-services]
     steps:
       - name: Configure AWS Credentials
-        env:
-          ENVIRONMENT: ${{ inputs.environment }}
         run: |
           echo "Configuring AWS credentials."
           echo "AWS Role ARN: ${{ vars.AWS_ROLE_ARN }}"
