@@ -1,51 +1,49 @@
-![](https://img.shields.io/github/commit-activity/t/subhamay-bhattacharyya-gha/github-action-template)&nbsp;![](https://img.shields.io/github/last-commit/subhamay-bhattacharyya-gha/github-action-template)&nbsp;![](https://img.shields.io/github/release-date/subhamay-bhattacharyya-gha/github-action-template)&nbsp;![](https://img.shields.io/github/repo-size/subhamay-bhattacharyya-gha/github-action-template)&nbsp;![](https://img.shields.io/github/directory-file-count/subhamay-bhattacharyya-gha/github-action-template)&nbsp;![](https://img.shields.io/github/issues/subhamay-bhattacharyya-gha/github-action-template)&nbsp;![](https://img.shields.io/github/languages/top/subhamay-bhattacharyya-gha/github-action-template)&nbsp;![](https://img.shields.io/github/commit-activity/m/subhamay-bhattacharyya-gha/github-action-template)&nbsp;![](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/bsubhamay/06e35985280456b113298ed56c626e73/raw/github-action-template.json?)
+# GitHub Reusable CI Workflow using CloudFormation
 
-# GitHub Template Repository - Composite Action
+![Commit Activity](https://img.shields.io/github/commit-activity/t/subhamay-bhattacharyya-gha/cfn-ci-reusable-wf)&nbsp;![Last Commit](https://img.shields.io/github/last-commit/subhamay-bhattacharyya-gha/cfn-ci-reusable-wf)&nbsp;![Release Date](https://img.shields.io/github/release-date/subhamay-bhattacharyya-gha/cfn-ci-reusable-wf)&nbsp;![Repo Size](https://img.shields.io/github/repo-size/subhamay-bhattacharyya-gha/cfn-ci-reusable-wf)&nbsp;![File Count](https://img.shields.io/github/directory-file-count/subhamay-bhattacharyya-gha/cfn-ci-reusable-wf)&nbsp;![Open Issues](https://img.shields.io/github/issues/subhamay-bhattacharyya-gha/cfn-ci-reusable-wf)&nbsp;![Top Language](https://img.shields.io/github/languages/top/subhamay-bhattacharyya-gha/cfn-ci-reusable-wf)&nbsp;![Monthly Commit Activity](https://img.shields.io/github/commit-activity/m/subhamay-bhattacharyya-gha/cfn-ci-reusable-wf)&nbsp;![Custom Endpoint](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/bsubhamay/137270a1d412786fd1bae6d4f1a32e9b/raw/cfn-ci-reusable-wf.json?)
 
-A Template GitHub Repository to be used to create a composite action.
+## Reusable CI Workflow for CloudFormation
 
-# Action Name
-
-**Action Description**
-
-This GitHub Action provides a reusable composite workflow that sets up Python and interacts with the GitHub API to post a comment on an issue, including a link to a created branch.
+This GitHub Action provides a reusable composite workflow that simplifies CI processes for CloudFormation templates. It includes steps to validate, lint, and deploy CloudFormation stacks, as well as interact with the GitHub API for enhanced automation.
 
 ---
 
 ## Inputs
 
-| Name           | Description         | Required | Default        |
-|----------------|---------------------|----------|----------------|
-| `input-1`      | Input description.  | No       | `default-value`|
-| `input-2`      | Input description.  | No       | `default-value`|
-| `input-3`      | Input description.  | No       | `default-value`|
-| `github-token` | GitHub token. Used for API authentication. | Yes | — |
+| Name                | Description                                                                 | Required | Default        |
+|---------------------|-----------------------------------------------------------------------------|----------|----------------|
+| `aws-role-arn`      | ARN of the AWS IAM role to assume for deploying the stack.                  | Yes      | —              |
+| `aws-region`        | AWS region where the stack will be deployed.                                | No       | `us-east-1`    |
+| `cfn-template-file` | Path to the CloudFormation template file to be validated and deployed.      | Yes      | —              |
+| `cfn-params-file`   | Path to the JSON file containing CloudFormation stack parameters.           | Yes      | —              |
+| `snyk-token`        | Snyk token for security scanning integration.                               | No       | —              |
 
 ---
 
 ## Example Usage
 
 ```yaml
-name: Example Workflow
+name: CloudFormation Build
+run-name: Build run by ${{ github.actor }} on ${{ github.ref_name }}
 
 on:
-  issues:
-    types: [opened]
+  workflow_dispatch:
+
+env:
+  AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
 
 jobs:
-  example:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  ci-build:
+    uses: subhamay-bhattacharyya-gha/cfn-ci-reusable-wf/.github/workflows/ci.yaml@main
+    environment: ci
+    with:
+      aws-role-arn: ${{ env.AWS_ROLE_ARN }}
+      aws-region: ${{ env.AWS_REGION }}
+      cfn-template-file: root-stack-template.yaml
+      cfn-params-file: ./cfn/params/cfn-parameters.json
+      snyk-token: ${{ secrets.SNYK_TOKEN }}
 
-      - name: Run Custom Action
-        uses: your-org/your-action-repo@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          input-1: your-value
-          input-2: another-value
-          input-3: something-else
 ```
 
 ## License

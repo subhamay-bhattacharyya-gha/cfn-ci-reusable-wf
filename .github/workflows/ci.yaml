@@ -1,0 +1,197 @@
+name: CloudFormation CI Pipeine (Reusable)
+description: |
+  This is a reusable GitHub Actions workflow for CI/CD using CloudFormation.
+  It includes steps for linting, validating, scanning, and building AWS resources.
+  The workflow is designed to be triggered by other workflows or manually.
+  It also includes steps for checking environments, detecting changes, and preparing builds.
+
+on:
+  workflow_call:
+    inputs:
+      aws-role-arn:
+        description: "ARN of the role to be assumed."
+        required: true
+        type: string
+        default: arn:aws:iam::637423502513:role/subhamay-github-oidc-role
+      aws-region:
+        description: "AWS region where the services will be deployed."
+        required: true
+        type: string
+        default: us-east-1
+      cfn-template-file:
+        description: "CloudFormation template file name."
+        required: true
+        type: string
+        default: "root-stack-template.yaml"
+      cfn-params-file:
+        description: "CloudFormation parameters file."
+        required: true
+        type: string
+        default: "./cfn/params/cfn-parameters.json"
+      snyk-token:
+        description: "Snyk token for authentication."
+        required: false
+        type: string
+
+permissions:
+  id-token: write
+
+jobs:
+  check-environments:
+    name: 🔎 Check the available environments
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Available Environments
+        run: echo "Listing changed files."
+
+  check-branch-issue:
+    name: 🔎 Check branch issue
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify branch issue
+        run: echo "Verify branch issue."
+
+  repo-changes:
+    name: 🔎 Detect Repo Changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: List Changed Files
+        run: echo "Listing changed files."
+
+  detect-services:
+    name: 🔎 Detect Used AWS Services
+    runs-on: ubuntu-latest
+    steps:
+      - name: Detect AWS Services Used
+        run: echo "Detecting services used."
+
+  cfn-lint:
+    name: 📋 CFN Lint
+    runs-on: ubuntu-latest
+    needs:
+      [check-environments, check-branch-issue, repo-changes, detect-services]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+  cfn-validate:
+    name: ✔️ CFN Validate
+    runs-on: ubuntu-latest
+    needs:
+      [check-environments, check-branch-issue, repo-changes, detect-services]
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: ${{ inputs.aws-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+
+  checkov-scan:
+    name: 🧳 Checkov IaC Scan
+    runs-on: ubuntu-latest
+    needs:
+      [check-environments, check-branch-issue, repo-changes, detect-services]
+    steps:
+      - name: Checkout Code
+        run: echo "Checkov Scan"
+
+  snyk-scan:
+    name: 🧾 Snyk IaC Scan
+    runs-on: ubuntu-latest
+    needs:
+      [check-environments, check-branch-issue, repo-changes, detect-services]
+    # env:
+    #   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    #   SNYK_ORG_ID: ${{ secrets.SNYK_ORGANIZATION_ID }}
+    steps:
+      - name: Snyk Scan
+        run: echo "Snyk Scan"
+
+  guard-rail:
+    name: 💂🏻‍♀️ Infra Guard Rail
+    runs-on: ubuntu-latest
+    needs:
+      [check-environments, check-branch-issue, repo-changes, detect-services]
+    steps:
+      - name: Guardrail
+        run: echo "Guard Rail"
+
+  prepare-builds:
+    name: 🛠️ Prepare Build Jobs
+    runs-on: ubuntu-latest
+    needs:
+      - cfn-lint
+      - cfn-validate
+      - checkov-scan
+      - snyk-scan
+      - guard-rail
+    steps:
+      - name: Preparation Complete
+        run: echo "Build jobs can now run."
+
+  build-lambda:
+    name: 🛠️ Build Lambda Package
+    runs-on: ubuntu-latest
+    # if: ${{ inputs.lambda == true }}
+    needs: prepare-builds
+    steps:
+      - name: Build Lambda Package
+        run: echo "Building Lambda package..."
+
+  build-lambda-layer:
+    name: 🛠️ Build Lambda Layer
+    runs-on: ubuntu-latest
+    # if: ${{ inputs.lambda == true }}
+    needs: prepare-builds
+    steps:
+      - name: Build Lambda Layer
+        run: echo "Building Lambda layer..."
+
+  build-glue:
+    name: 🛠️ Build Glue Script
+    runs-on: ubuntu-latest
+    # if: ${{ inputs.glue == true }}
+    needs: prepare-builds
+    steps:
+      - name: Package Glue Script
+        run: echo "Packaging Glue script..."
+
+  build-state-machine:
+    name: 🛠️ Deploy State Machine
+    runs-on: ubuntu-latest
+    # if: ${{ inputs.state-machine == true }}
+    needs: prepare-builds
+    steps:
+      - name: Deploy State Machine
+        run: echo "Deploying State Machine..."
+
+  ci-build:
+    name: 📦 CI Build
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - build-lambda
+      - build-lambda-layer
+      - build-glue
+      - build-state-machine
+    steps:
+      - name: Finalize CI Build
+        run: echo "CI build completed regardless of individual builds."
+
+  infra-cost:
+    name: 💰 Infra Cost
+    runs-on: ubuntu-latest
+    if: always()
+    needs: ci-build
+    steps:
+      - name: Determine Infra Cost
+        run: echo "Determine Infra Cost."
+
+  release-button:
+    name: 🚀 Create Release button
+    runs-on: ubuntu-latest
+    if: always()
+    needs: infra-cost
+    steps:
+      - name: Create Release Button
+        run: echo "Create Release Button."
