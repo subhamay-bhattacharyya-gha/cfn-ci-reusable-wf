@@ -71,8 +71,16 @@ jobs:
     name: 🔎 Detect Services
     runs-on: ubuntu-latest
     steps:
-      - name: Detect AWS Services Used
-        run: echo "Detecting services used."
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Scan AWS Services
+        id: scan
+        uses: subhamay-bhattacharyya-gha/scan-aws-services-action@feature/SB-0001-create-new-action
+
+      - name: Print Output
+        run: |
+          echo "Detected Services: ${{ steps.scan.outputs.services-used }}"
 
   cfn-lint:
     name: 📋 CFN Lint
