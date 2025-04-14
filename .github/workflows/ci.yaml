@@ -89,10 +89,10 @@ jobs:
           echo "| Service               | Used |" >> $GITHUB_STEP_SUMMARY
           echo "|------------------------|------|" >> $GITHUB_STEP_SUMMARY
       
-          result="${{ steps.scan.outputs.services-used }}"
+          # result="${{ steps.scan.outputs.services-used }}"
       
           node -e "
-            const result = JSON.parse(result);
+            const result = JSON.parse(${{ steps.scan.outputs.services-used }});
             const emoji = (val) => val ? '✅' : '❌';
             const rows = Object.entries(result)
               .map(([key, val]) => \`| \${key.padEnd(22)} | \${emoji(val)} |\`)
