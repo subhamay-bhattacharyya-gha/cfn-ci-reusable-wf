@@ -39,7 +39,7 @@ jobs:
     steps:
       - name: Check Available Environments
         id: check
-        uses: subhamay-bhattacharyya-gha/check-environments-action@feature/SB-0001-initial-release
+        uses: subhamay-bhattacharyya-gha/check-environments-action@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -49,7 +49,8 @@ jobs:
     steps:
       - name: Verify branch issue
         id: branch-issue
-        uses: subhamay-bhattacharyya-gha/branch-issue-action@feature/SB-0003-add-summary
+        uses: subhamay-bhattacharyya-gha/branch-issue-action@main
+        
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
