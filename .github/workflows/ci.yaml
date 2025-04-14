@@ -69,7 +69,7 @@ jobs:
 
       - name: Detect modified files
         id: detect
-        uses: subhamay-bhattacharyya-gha/list-updated-files-action@main
+        uses: subhamay-bhattacharyya-gha/list-updated-files-action@feature/SB-0001-initial-release
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
