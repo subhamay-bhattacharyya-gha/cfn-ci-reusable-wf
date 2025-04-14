@@ -78,10 +78,19 @@ jobs:
         id: scan
         uses: subhamay-bhattacharyya-gha/scan-aws-services-action@feature/SB-0001-create-new-action
 
-      - name: Store JSON Output in Env
+      - name: Save Detected Services to Environment Variable
         run: |
-          echo "SERVICES_USED=${{ steps.scan.outputs.services-used }}" >> $GITHUB_ENV
+          echo "Detected Services: ${{ steps.scan.outputs.services-used }}"
+          echo "SERVICES_JSON=${{ steps.scan.outputs.services-used }}" >> $GITHUB_ENV
       
+      - name: Use JSON from Environment Variable
+        run: |
+          echo "JSON in env: $SERVICES_JSON"
+          node -e '
+            const data = JSON.parse(process.env.SERVICES_JSON);
+            console.log("Parsed JSON:", data);
+          '
+        
       - name: Print AWS Service Detection Table
         run: |
           echo "## AWS Services Detected" >> $GITHUB_STEP_SUMMARY
@@ -90,7 +99,7 @@ jobs:
           echo "|------------------------|------|" >> $GITHUB_STEP_SUMMARY
 
           node -e "
-            const result = JSON.parse(process.env.SERVICES_USED);
+            const result = JSON.parse(process.env.SERVICES_JSON);
             const emoji = (val) => val ? '✅' : '❌';
             const rows = Object.entries(result)
               .map(([key, val]) => \`| \${key.padEnd(22)} | \${emoji(val)} |\`)
