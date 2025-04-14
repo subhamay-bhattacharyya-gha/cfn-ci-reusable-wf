@@ -80,8 +80,8 @@ jobs:
 
       - name: Print Output
         run: |
-          echo "Detected Services: ${{ steps.scan.outputs.services-used }}"
-          echo "RESULT=${{ steps.scan.outputs.services-used }}" >> $GITHUB_ENV
+          echo "Detected Services: toJSON(${{ steps.scan.outputs.services-used }})"
+          echo "RESULT=toJSON(${{ steps.scan.outputs.services-used }})" >> $GITHUB_ENV
 
       - name: Print AWS Service Detection Table
         run: |
