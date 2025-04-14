@@ -81,6 +81,7 @@ jobs:
       - name: Print Output
         run: |
           echo "Detected Services: ${{ steps.scan.outputs.services-used }}"
+          echo "RESULT=${{ steps.scan.outputs.services-used }}" >> $GITHUB_ENV
 
       - name: Print AWS Service Detection Table
         run: |
@@ -88,19 +89,16 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Service               | Used |" >> $GITHUB_STEP_SUMMARY
           echo "|------------------------|------|" >> $GITHUB_STEP_SUMMARY
-      
-          # result="${{ steps.scan.outputs.services-used }}"
-      
+
           node -e "
-            const result = JSON.parse(${{ steps.scan.outputs.services-used }});
+            const result = JSON.parse(process.env.RESULT);
             const emoji = (val) => val ? '✅' : '❌';
             const rows = Object.entries(result)
               .map(([key, val]) => \`| \${key.padEnd(22)} | \${emoji(val)} |\`)
               .join('\n');
             console.log(rows);
-          " RESULT="$result" >> $GITHUB_STEP_SUMMARY
-        
-        
+          " >> $GITHUB_STEP_SUMMARY
+      
 
   cfn-lint:
     name: 📋 CFN Lint
