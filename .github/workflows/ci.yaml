@@ -81,15 +81,6 @@ jobs:
       - name: Save Detected Services to Environment Variable
         run: |
           echo "Detected Services: ${{ steps.scan.outputs.services-used }}"
-          echo "SERVICES_JSON=${{ steps.scan.outputs.services-used }}" >> $GITHUB_ENV
-      
-      - name: Use JSON from Environment Variable
-        run: |
-          echo "JSON in env: $SERVICES_JSON"
-          node -e '
-            const data = JSON.parse(process.env.SERVICES_JSON);
-            console.log("Parsed JSON:", data);
-          '
         
       - name: Print AWS Service Detection Table
         run: |
@@ -99,7 +90,7 @@ jobs:
           echo "|------------------------|------|" >> $GITHUB_STEP_SUMMARY
 
           node -e "
-            const result = JSON.parse(process.env.SERVICES_JSON);
+            const result = JSON.parse(${{ steps.scan.outputs.services-used }});
             const emoji = (val) => val ? '✅' : '❌';
             const rows = Object.entries(result)
               .map(([key, val]) => \`| \${key.padEnd(22)} | \${emoji(val)} |\`)
