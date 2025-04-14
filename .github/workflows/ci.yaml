@@ -92,7 +92,7 @@ jobs:
           result="${{ steps.scan.outputs.services-used }}"
       
           node -e "
-            const result = JSON.parse(process.env.RESULT);
+            const result = JSON.parse(result);
             const emoji = (val) => val ? '✅' : '❌';
             const rows = Object.entries(result)
               .map(([key, val]) => \`| \${key.padEnd(22)} | \${emoji(val)} |\`)
