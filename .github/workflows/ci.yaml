@@ -81,7 +81,7 @@ jobs:
       - name: Save Detected Services to Environment Variable
         run: |
           echo "Detected Services: ${{ steps.scan.outputs.services-used }}"
-          echo "SERVICES_USED=${{ steps.scan.outputs.services-used }}" >> $GITHUB_ENV
+          echo 'SERVICES_USED=${{ steps.scan.outputs.services-used }}' >> $GITHUB_ENV
         
       - name: Print AWS Service Detection Table
         run: |
