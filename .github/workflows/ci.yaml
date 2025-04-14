@@ -76,7 +76,7 @@ jobs:
 
       - name: Scan AWS Services
         id: scan
-        uses: subhamay-bhattacharyya-gha/scan-aws-services-action@feature/SB-0001-create-new-action
+        uses: subhamay-bhattacharyya-gha/scan-aws-services-action@main
 
       - name: Save Detected Services to Environment Variable
         run: |
