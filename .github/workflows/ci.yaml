@@ -64,8 +64,19 @@ jobs:
     name: 🔎 Repo Changes
     runs-on: ubuntu-latest
     steps:
-      - name: List Changed Files
-        run: echo "Listing changed files."
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect modified files
+        id: detect
+        uses: subhamay-bhattacharyya-gha/list-updated-files-action@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Display modified files
+        run: |
+          echo "Modified files:"
+          echo "${{ steps.detect.outputs.modified_files }}"
 
   detect-services:
     name: 🔎 Detect Services
