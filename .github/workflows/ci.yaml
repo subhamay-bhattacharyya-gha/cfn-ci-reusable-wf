@@ -122,8 +122,8 @@ jobs:
       
           FILE_LIST=$(cut -f2 changed_files.txt | paste -sd ',' -)
           echo "files=$FILE_LIST" >> "$GITHUB_OUTPUT"
-        
-   detect-services:
+
+  detect-services:
     name: 🔎 Detect Services
     runs-on: ubuntu-latest
     steps:
