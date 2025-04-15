@@ -67,10 +67,14 @@ jobs:
         id: detect
         uses: subhamay-bhattacharyya-gha/list-updated-files-action@feature/SB-0001-initial-release
 
-      - name: Print outputs
+      # - name: Print outputs
+      #   run: |
+      #     echo "Files changed: ${{ steps.detect.outputs.files-changed }}"
+      #     echo "Repo changes: ${{ steps.detect.outputs.json-output }}"
+
+      - name: Decode JSON output
         run: |
-          echo "Files changed: ${{ steps.detect.outputs.files-changed }}"
-          echo "Repo changes: ${{ steps.detect.outputs.json-output }}"
+          echo "${{ steps.detect.outputs.json-output }}" | base64 -d | jq .
 
   detect-services:
     name: 🔎 Detect Services
