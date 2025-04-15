@@ -127,7 +127,7 @@ jobs:
           echo "## Execution Path" >> $GITHUB_STEP_SUMMARY
           echo "Services Used: ${{ needs.detect-services.outputs.services-used }}"
           echo "Repository Changes: ${{ needs.detect-changes.outputs.files-changed }}"
-          echo "JSON Output: echo ${{ needs.detect-changes.outputs.json-output }} | base64 -d | jq ."
+          echo "${{ needs.detect-changes.outputs.json-output }}" | base64 -d | jq .
           echo "Has changes: ${{ needs.detect-changes.outputs.has-changes }}"
 
 
