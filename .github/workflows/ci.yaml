@@ -67,17 +67,10 @@ jobs:
         id: detect
         uses: subhamay-bhattacharyya-gha/list-updated-files-action@feature/SB-0001-initial-release
 
-      # - name: Print outputs
-      #   run: |
-      #     echo "Files changed: ${{ steps.detect.outputs.files-changed }}"
-      #     cat ${{ steps.detect.outputs.json-output }}
-
       - name: Print outputs
         run: |
           echo "Files changed: ${{ steps.detect.outputs.files-changed }}"
-          echo "Catting file: ${{ steps.detect.outputs.json-output }}"
-          cat "${{ steps.detect.outputs.json-output }}"
-        
+          echo "Repo changes: ${{ steps.detect.outputs.json-output }}"
 
   detect-services:
     name: 🔎 Detect Services
