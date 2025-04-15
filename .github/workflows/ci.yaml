@@ -171,7 +171,7 @@ jobs:
     name: 🛠️ Lambda Package
     runs-on: ubuntu-latest
     # if: ${{ inputs.lambda == true }}
-    needs: [execution-path, check-environments]
+    needs: [execution-path, detect-services, detect-changes]
     steps:
       - name: Build Lambda Package
         run: echo "Building Lambda package..."
@@ -189,7 +189,7 @@ jobs:
     name: 🛠️ Glue Script
     runs-on: ubuntu-latest
     # if: ${{ inputs.glue == true }}
-    needs: [execution-path, check-environments]
+    needs: [execution-path, detect-services, detect-changes]
     steps:
       - name: Package Glue Script
         run: echo "Packaging Glue script..."
