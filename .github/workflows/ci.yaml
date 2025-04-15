@@ -172,6 +172,7 @@ jobs:
       - checkov-scan
       - snyk-scan
       - guard-rail
+      - cfn-validate
     steps:
       - name: Preparation Complete
         run: echo "Build jobs can now run."
