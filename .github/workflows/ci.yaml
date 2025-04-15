@@ -61,6 +61,10 @@ jobs:
   detect-changes:
     name: 🔎 Detect Repo Changes
     runs-on: ubuntu-latest
+    outputs:
+      files-changed: ${{ steps.repo-changes.outputs.files-changed }}
+      json-output: ${{ steps.repo-changes.outputs.json-output }}
+      has-changes: ${{ steps.repo-changes.outputs.has-changes }}
 
     steps:
       - name: Detect repository changes
@@ -75,6 +79,8 @@ jobs:
   detect-services:
     name: 🔎 Detect Services
     runs-on: ubuntu-latest
+    outputs:
+      services-used: ${{ steps.scan.outputs.services-used }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -112,13 +118,18 @@ jobs:
   execution-path:
     name: 🔎 Determine Execution Path
     runs-on: ubuntu-latest
-    needs: [check-environments, check-branch-issue]
+    needs: [check-environments, check-branch-issue, detect-services, detect-changes]
     steps:
       - name: Determine execution path
         id: detect
         run: |
           echo "Determine execution path"
           echo "## Execution Path" >> $GITHUB_STEP_SUMMARY
+          echo "Services Used: ${{ needs.detect-services.outputs.services-used }}"
+          echo "Repository Changes: ${{ needs.detect-changes.outputs.files-changed }}"
+          echo "JSON Output: ${{ needs.detect-changes.outputs.json-output }}| base64 -d | jq ."
+          echo "Has changes: ${{ needs.detect-changes.outputs.has-changes }}"
+
 
   cfn-lint:
     name: 📋 CFN Lint
