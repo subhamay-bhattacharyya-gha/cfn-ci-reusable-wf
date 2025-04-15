@@ -120,16 +120,24 @@ jobs:
     runs-on: ubuntu-latest
     needs: [check-environments, check-branch-issue, detect-services, detect-changes]
     steps:
-      - name: Determine execution path
-        id: detect
+      - name: Determine services used and repo changes
         run: |
           echo "Determine execution path"
           echo "## Execution Path" >> $GITHUB_STEP_SUMMARY
-          echo "Services Used: ${{ needs.detect-services.outputs.services-used }}"
-          echo "Repository Changes: ${{ needs.detect-changes.outputs.files-changed }}"
-          echo "${{ needs.detect-changes.outputs.json-output }}" | base64 -d | jq .
-          echo "Has changes: ${{ needs.detect-changes.outputs.has-changes }}"
+          # echo "Services Used: ${{ needs.detect-services.outputs.services-used }}"
+          # echo "Repository Changes: ${{ needs.detect-changes.outputs.files-changed }}"
+          echo "${{ needs.detect-changes.outputs.json-output }}" | base64 -d | jq . > ${{ github.workspace }}/repo-changes.json
+          echo '${{ needs.detect-services.outputs.services-used }}' | sed -E 's/([{,])([^:{]+):/\1"\2":/g' | jq . > ${{ github.workspace }}/services-used.json
+          # echo "Has changes: ${{ needs.detect-changes.outputs.has-changes }}"
 
+      - name: Determine Execution Path
+        id: determine-path
+        run: |
+          echo "Determine execution path"
+          cat ${{ github.workspace }}/repo-changes.json
+          echo "-------------------------------------------------------"
+          cat ${{ github.workspace }}/services-used.json
+          echo "-------------------------------------------------------"
 
   cfn-lint:
     name: 📋 CFN Lint
