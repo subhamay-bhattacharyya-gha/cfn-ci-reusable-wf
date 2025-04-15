@@ -136,7 +136,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs:
-      [execution-path, detect-changes, detect-services]
+      [check-environments, check-branch-issue, execution-path, detect-changes, detect-services]
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -148,7 +148,7 @@ jobs:
     name: 🧳 Checkov Scan
     runs-on: ubuntu-latest
     needs:
-      [execution-path, detect-changes, detect-services]
+      [check-environments, check-branch-issue, execution-path, detect-changes, detect-services]
     steps:
       - name: Checkout Code
         run: echo "Checkov Scan"
@@ -157,7 +157,7 @@ jobs:
     name: 🧾 Snyk IaC Scan
     runs-on: ubuntu-latest
     needs:
-      [execution-path, detect-changes, detect-services]
+      [check-environments, check-branch-issue, execution-path, detect-changes, detect-services]
     # env:
     #   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     #   SNYK_ORG_ID: ${{ secrets.SNYK_ORGANIZATION_ID }}
@@ -169,7 +169,7 @@ jobs:
     name: 💂🏻‍♀️ Infra Guard Rail
     runs-on: ubuntu-latest
     needs:
-      [execution-path, detect-changes, detect-services]
+      [check-environments, check-branch-issue, execution-path, detect-changes, detect-services]
     steps:
       - name: Guardrail
         run: echo "Guard Rail"
