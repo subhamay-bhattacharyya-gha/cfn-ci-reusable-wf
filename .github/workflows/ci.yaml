@@ -127,7 +127,7 @@ jobs:
           # echo "Services Used: ${{ needs.detect-services.outputs.services-used }}"
           # echo "Repository Changes: ${{ needs.detect-changes.outputs.files-changed }}"
           echo "${{ needs.detect-changes.outputs.json-output }}" | base64 -d | jq . > ${{ github.workspace }}/repo-changes.json
-          echo ${{ needs.detect-services.outputs.services-used }} > ${{ github.workspace }}/services-used.json
+          echo "${{ needs.detect-services.outputs.services-used }}"| sed -E 's/([{,])([^:{]+):/\1"\2":/g'|jq . > ${{ github.workspace }}/services-used.json
           # echo "Has changes: ${{ needs.detect-changes.outputs.has-changes }}"
 
       - name: Determine Execution Path
