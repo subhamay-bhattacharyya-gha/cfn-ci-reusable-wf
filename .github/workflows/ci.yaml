@@ -67,16 +67,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Detect modified files
-        id: detect
-        uses: subhamay-bhattacharyya-gha/list-updated-files-action@feature/SB-0001-initial-release
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Display modified files
+      - name: Print changed files # To properly debug what is being deployed (It can be removed).
         run: |
-          echo "Modified files:"
-          echo "${{ steps.detect.outputs.modified_files }}"
+          echo "List of changed files:" 
+          echo $(git diff --name-only HEAD^ HEAD)
+          echo "==============================================="
+          git diff-tree --no-commit-id --name-only -r HEAD
+
+      # - name: Detect modified files
+      #   id: detect
+      #   uses: subhamay-bhattacharyya-gha/list-updated-files-action@feature/SB-0001-initial-release
+      #   with:
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Display modified files
+      #   run: |
+      #     echo "Modified files:"
+      #     echo "${{ steps.detect.outputs.modified_files }}"
 
   detect-services:
     name: 🔎 Detect Services
