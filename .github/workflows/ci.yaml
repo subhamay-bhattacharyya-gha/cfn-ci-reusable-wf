@@ -60,68 +60,19 @@ jobs:
           echo "Branch Issue: ${{ steps.branch-issue.outputs.issue-exists }}"
 
 
-  repo-changes:
+  detect-changes:
     name: 🔎 Detect Repo Changes
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout with sufficient history
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-    
-      - name: Print and store changed files with status JSON
-        id: changed-files
+      - name: Detect repository changes
+        id: detect
+        uses: subhamay-bhattacharyya-gha/list-updated-files-action@feature/SB-0001-initial-release
+
+      - name: Print outputs
         run: |
-          echo "Fetching remote default branch..."
-          git fetch origin
-      
-          DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
-      
-          echo "List of changed files with status (A=Added, M=Modified, D=Deleted):"
-          if git diff --name-status origin/$DEFAULT_BRANCH > changed_files.txt 2>/dev/null; then
-            cat changed_files.txt
-          else
-            echo "Could not get diff with default branch — using diff-tree fallback."
-            git diff-tree --no-commit-id --name-status -r HEAD > changed_files.txt
-            cat changed_files.txt
-          fi
-      
-          echo "==============================================="
-      
-          if [ ! -s changed_files.txt ]; then
-            echo "No changed files detected. Skipping further steps."
-            echo "files=" >> "$GITHUB_OUTPUT"
-            echo '{ "A": [], "M": [], "D": [] }' > changed_files.json
-            exit 0
-          fi
-      
-          echo "Generating changed_files.json..."
-          awk '
-          BEGIN {
-            print "{"
-            added = modified = deleted = ""
-          }
-          {
-            status = $1
-            file = $2
-            if (status == "A") added = added "\"" file "\","
-            else if (status == "M") modified = modified "\"" file "\","
-            else if (status == "D") deleted = deleted "\"" file "\","
-          }
-          END {
-            if (length(added)) added = substr(added, 1, length(added)-1)
-            if (length(modified)) modified = substr(modified, 1, length(modified)-1)
-            if (length(deleted)) deleted = substr(deleted, 1, length(deleted)-1)
-            print "  \"A\": [" added "],"
-            print "  \"M\": [" modified "],"
-            print "  \"D\": [" deleted "]"
-            print "}"
-          }' changed_files.txt > changed_files.json
-      
-          cat changed_files.json
-      
-          FILE_LIST=$(cut -f2 changed_files.txt | paste -sd ',' -)
-          echo "files=$FILE_LIST" >> "$GITHUB_OUTPUT"
+          echo "Files changed: ${{ steps.detect.outputs.files-changed }}"
+          cat ${{ steps.detect.outputs.json-output }}
 
   detect-services:
     name: 🔎 Detect Services
@@ -165,7 +116,7 @@ jobs:
     name: 📋 CFN Lint
     runs-on: ubuntu-latest
     needs:
-      [check-environments, check-branch-issue, repo-changes, detect-services]
+      [check-environments, check-branch-issue, detect-changes, detect-services]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -175,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs:
-      [check-environments, check-branch-issue, repo-changes, detect-services]
+      [check-environments, check-branch-issue, detect-changes, detect-services]
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -187,7 +138,7 @@ jobs:
     name: 🧳 Checkov Scan
     runs-on: ubuntu-latest
     needs:
-      [check-environments, check-branch-issue, repo-changes, detect-services]
+      [check-environments, check-branch-issue, detect-changes, detect-services]
     steps:
       - name: Checkout Code
         run: echo "Checkov Scan"
@@ -196,7 +147,7 @@ jobs:
     name: 🧾 Snyk IaC Scan
     runs-on: ubuntu-latest
     needs:
-      [check-environments, check-branch-issue, repo-changes, detect-services]
+      [check-environments, check-branch-issue, detect-changes, detect-services]
     # env:
     #   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     #   SNYK_ORG_ID: ${{ secrets.SNYK_ORGANIZATION_ID }}
@@ -208,7 +159,7 @@ jobs:
     name: 💂🏻‍♀️ Infra Guard Rail
     runs-on: ubuntu-latest
     needs:
-      [check-environments, check-branch-issue, repo-changes, detect-services]
+      [check-environments, check-branch-issue, detect-changes, detect-services]
     steps:
       - name: Guardrail
         run: echo "Guard Rail"
@@ -218,7 +169,6 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - cfn-lint
-      - cfn-validate
       - checkov-scan
       - snyk-scan
       - guard-rail
