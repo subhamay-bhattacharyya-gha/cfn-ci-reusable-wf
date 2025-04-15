@@ -64,17 +64,13 @@ jobs:
 
     steps:
       - name: Detect repository changes
-        id: detect
+        id: repo-changes
         uses: subhamay-bhattacharyya-gha/list-updated-files-action@feature/SB-0001-initial-release
-
-      # - name: Print outputs
-      #   run: |
-      #     echo "Files changed: ${{ steps.detect.outputs.files-changed }}"
-      #     echo "Repo changes: ${{ steps.detect.outputs.json-output }}"
 
       - name: Decode JSON output
         run: |
-          echo "${{ steps.detect.outputs.json-output }}" | base64 -d | jq .
+          echo "${{ steps.repo-changes.outputs.json-output }}" | base64 -d | jq .
+          echo "Files changed: ${{ steps.repo-changes.outputs.files-changed }}"
 
   detect-services:
     name: 🔎 Detect Services
