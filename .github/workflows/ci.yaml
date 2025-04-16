@@ -119,8 +119,6 @@ jobs:
         run: |
           echo "Determine execution path"
           echo "## Execution Path" >> $GITHUB_STEP_SUMMARY
-          # echo "Services Used: ${{ needs.detect-services.outputs.services-used }}"
-          # echo "Repository Changes: ${{ needs.detect-changes.outputs.files-changed }}"
           echo "${{ needs.detect-changes.outputs.json-output }}" | base64 -d | jq . > ${{ github.workspace }}/repo-changes.json
           echo "${{ needs.detect-services.outputs.services-used }}"| sed -E 's/([{,])([^:{]+):/\1"\2":/g'|jq . > ${{ github.workspace }}/services-used.json
           # echo "Has changes: ${{ needs.detect-changes.outputs.has-changes }}"
@@ -151,7 +149,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
   checkov-scan:
