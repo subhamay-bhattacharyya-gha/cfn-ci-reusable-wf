@@ -69,12 +69,7 @@ jobs:
     steps:
       - name: Detect repository changes
         id: repo-changes
-        uses: subhamay-bhattacharyya-gha/list-updated-files-action@feature/SB-0001-initial-release
-
-      - name: Decode JSON output
-        run: |
-          echo "${{ steps.repo-changes.outputs.json-output }}" | base64 -d | jq .
-          echo "Files changed: ${{ steps.repo-changes.outputs.files-changed }}"
+        uses: subhamay-bhattacharyya-gha/list-updated-files-action@main
 
   detect-services:
     name: 🔎 Detect Services
@@ -89,10 +84,10 @@ jobs:
         id: scan
         uses: subhamay-bhattacharyya-gha/scan-aws-services-action@main
 
-      - name: Save Detected Services to Environment Variable
-        run: |
-          echo "Detected Services: ${{ steps.scan.outputs.services-used }}"
-          echo 'SERVICES_USED=${{ steps.scan.outputs.services-used }}' >> $GITHUB_ENV
+      # - name: Save Detected Services to Environment Variable
+      #   run: |
+      #     echo "Detected Services: ${{ steps.scan.outputs.services-used }}"
+      #     echo 'SERVICES_USED=${{ steps.scan.outputs.services-used }}' >> $GITHUB_ENV
 
       - name: Print AWS Service Detection Table
         run: |
@@ -100,6 +95,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Service               | Used |" >> $GITHUB_STEP_SUMMARY
           echo "|------------------------|------|" >> $GITHUB_STEP_SUMMARY
+          echo 'SERVICES_USED=${{ steps.scan.outputs.services-used }}' >> $GITHUB_ENV
 
           node -e "
             try {
