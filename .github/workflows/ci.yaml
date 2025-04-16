@@ -13,6 +13,11 @@ on:
         required: true
         type: string
         default: ci
+      aws-region:
+        description: "AWS region to deploy to (e.g., us-east-1)."
+        required: true
+        type: string
+        default: us-east-1
       cfn-template-file:
         description: "CloudFormation template file name."
         required: true
@@ -27,6 +32,10 @@ on:
         description: "Snyk token for authentication."
         required: false
         type: string
+    secrets:
+      AWS_ROLE_ARN:
+        description: "GitHub token for authentication."
+        required: true
 
 permissions:
   id-token: write
@@ -155,13 +164,13 @@ jobs:
             echo "✅ AWS_ROLE_ARN is set, length: ${#AWS_ROLE_ARN}"
           fi
         env:
-          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+          AWS_ROLE_ARN: ${{ secrets.aws-role-arn }}
       
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.aws-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
 
 
   checkov-scan:
