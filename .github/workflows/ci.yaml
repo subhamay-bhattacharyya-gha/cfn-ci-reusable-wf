@@ -145,6 +145,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Lint CloudFormation templates
+        uses: subhamay-bhattacharyya-gha/cfn-lint-action@feature/SB-0001-initial-release
+        with:
+          template-dir: 'cfn'           # Optional, default is '.'
+          fail-on-warnings: 'true'      # Optional, default is 'false'
+
   cfn-validate:
     name: ✔️ CFN Validate
     runs-on: ubuntu-latest
