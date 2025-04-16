@@ -13,11 +13,6 @@ on:
         required: true
         type: string
         default: ci
-      aws-region:
-        description: "AWS region to deploy to (e.g., us-east-1)."
-        required: true
-        type: string
-        default: us-east-1
       cfn-template-file:
         description: "CloudFormation template file name."
         required: true
@@ -159,7 +154,6 @@ jobs:
       - name: Check if secret is set
         run: |
           echo "Environment: ${{ inputs.environment }}"
-          echo "AWS Region: ${{ inputs.aws-region }}"
           if [ -z "$AWS_ROLE_ARN" ]; then
             echo "❌ AWS_ROLE_ARN is not set"
           else
@@ -172,7 +166,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v3
         with:
           role-to-assume: ${{ secrets.aws-role-arn }}
-          aws-region: ${{ inputs.aws-region }}
+          aws-region: ${{ vars.AWS_REGION }}
 
 
   checkov-scan:
