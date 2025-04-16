@@ -33,9 +33,10 @@ on:
         required: false
         type: string
     secrets:
-      AWS_ROLE_ARN:
-        description: "GitHub token for authentication."
+      aws-role-arn:
+        description: "AWS role ARN for assuming a role."
         required: true
+
 
 permissions:
   id-token: write
