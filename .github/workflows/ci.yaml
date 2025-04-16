@@ -159,6 +159,7 @@ jobs:
       - name: Check if secret is set
         run: |
           echo "Environment: ${{ inputs.environment }}"
+          echo "AWS Region: ${{ inputs.aws-region }}"
           if [ -z "$AWS_ROLE_ARN" ]; then
             echo "❌ AWS_ROLE_ARN is not set"
           else
