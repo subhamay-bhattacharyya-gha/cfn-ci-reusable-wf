@@ -148,6 +148,7 @@ jobs:
     steps:
       - name: Check if secret is set
         run: |
+          echo "Environment: ${{ inputs.environment }}"
           if [ -z "$AWS_ROLE_ARN" ]; then
             echo "❌ AWS_ROLE_ARN is not set"
           else
@@ -155,15 +156,13 @@ jobs:
           fi
         env:
           AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
-    
+      
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          role-to-assume: ${AWS_ROLE_ARN}
-          aws-region: ${AWS_REGION}
-        env:
-          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
-          AWS_REGION: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
 
   checkov-scan:
     name: 🧳 Checkov Scan
