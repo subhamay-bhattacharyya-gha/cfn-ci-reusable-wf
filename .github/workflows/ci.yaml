@@ -151,22 +151,32 @@ jobs:
     environment: ${{ inputs.environment }}
     needs: [execution-path, detect-services, detect-changes]
     steps:
-      - name: Check if secret is set
-        run: |
-          echo "Environment: ${{ inputs.environment }}"
-          if [ -z "$AWS_ROLE_ARN" ]; then
-            echo "❌ AWS_ROLE_ARN is not set"
-          else
-            echo "✅ AWS_ROLE_ARN is set, length: ${#AWS_ROLE_ARN}"
-          fi
-        env:
-          AWS_ROLE_ARN: ${{ secrets.aws-role-arn }}
-      
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
           role-to-assume: ${{ secrets.aws-role-arn }}
           aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Validate CloudFormation Template
+        id: validate
+        run: |
+          echo "Validating CloudFormation template..."
+          aws cloudformation validate-template --template-body file://${{ inputs.cfn-template-file }} --region ${{ vars.AWS_REGION }}
+          if [ $? -ne 0 ]; then
+            echo "❌ CloudFormation template validation failed."
+            exit 1
+          else
+            echo "✅ CloudFormation template validation succeeded."
+          fi
+          
+      - name: Print Validation Result
+        run: |
+          echo "## CloudFormation Validation Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "CloudFormation template validation succeeded." >> $GITHUB_STEP_SUMMARY
 
 
   checkov-scan:
