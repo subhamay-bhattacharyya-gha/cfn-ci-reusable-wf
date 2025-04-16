@@ -146,6 +146,13 @@ jobs:
     environment: ${{ inputs.environment }}
     needs: [execution-path, detect-services, detect-changes]
     steps:
+      - name: Debug role input
+        run: |
+          echo "::warning::SECRET: ${AWS_ROLE_ARN}"
+          echo "Using role: ${AWS_ROLE_ARN}"
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+    
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
