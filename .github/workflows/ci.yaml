@@ -146,18 +146,24 @@ jobs:
     environment: ${{ inputs.environment }}
     needs: [execution-path, detect-services, detect-changes]
     steps:
-      - name: Debug role input
+      - name: Check if secret is set
         run: |
-          echo "::warning::SECRET: ${AWS_ROLE_ARN}"
-          echo "Using role: ${AWS_ROLE_ARN}"
+          if [ -z "$AWS_ROLE_ARN" ]; then
+            echo "❌ AWS_ROLE_ARN is not set"
+          else
+            echo "✅ AWS_ROLE_ARN is set, length: ${#AWS_ROLE_ARN}"
+          fi
         env:
           AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
     
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${AWS_ROLE_ARN}
+          aws-region: ${AWS_REGION}
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
 
   checkov-scan:
     name: 🧳 Checkov Scan
