@@ -164,14 +164,14 @@ jobs:
         id: validate
         run: |
           echo "Validating CloudFormation template..."
-          aws cloudformation validate-template --template-body file://${{ inputs.cfn-template-file }} --region ${{ vars.AWS_REGION }}
+          aws cloudformation validate-template --template-body file://${{ github.workspace }}/cfn/${{ inputs.cfn-template-file }} --region ${{ vars.AWS_REGION }}
           if [ $? -ne 0 ]; then
             echo "❌ CloudFormation template validation failed."
             exit 1
           else
             echo "✅ CloudFormation template validation succeeded."
           fi
-          
+
       - name: Print Validation Result
         run: |
           echo "## CloudFormation Validation Result" >> $GITHUB_STEP_SUMMARY
