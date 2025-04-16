@@ -177,7 +177,7 @@ jobs:
       - name: Display Status
         run: |
           echo "Validation Status: ${{ steps.validate.outputs.status }}"
-          echo "Validation Message: ${{ steps.validate.outputs.message }}"
+          # echo "Validation Message: ${{ steps.validate.outputs.message }}"
 
   checkov-scan:
     name: 🧳 Checkov Scan
