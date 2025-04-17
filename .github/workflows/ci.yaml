@@ -168,6 +168,7 @@ jobs:
 
       - name: Print Debug Info
         run: |
+          echo "Execution Path: ${{ toJSON(needs.execution-path.outputs.execution-path) }}"
           echo "IaC: ${{ toJSON(needs.execution-path.outputs.execution-path).IaC }}"
           echo "Lambda: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda }}"
 
