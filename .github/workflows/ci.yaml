@@ -38,7 +38,7 @@ permissions:
 
 jobs:
   check-environments:
-    name: 🔎 Check Environments 🟢
+    name: 🔎 Check Env 🟢
     runs-on: ubuntu-latest
     steps:
       - name: Check Available Environments
@@ -64,7 +64,7 @@ jobs:
           echo "Branch Issue: ${{ steps.branch-issue.outputs.issue-exists }}"
 
   detect-changes:
-    name: 🔎 Detect Repo Changes 🟢
+    name: 🔎 Detect Changes 🟢
     runs-on: ubuntu-latest
     outputs:
       files-changed: ${{ steps.repo-changes.outputs.files-changed }}
