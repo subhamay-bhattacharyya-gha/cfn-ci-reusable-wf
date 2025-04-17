@@ -185,10 +185,22 @@ jobs:
   checkov-scan:
     name: 🧳 Checkov Scan 🚧
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     needs: [execution-path, detect-services, detect-changes]
     steps:
       - name: Checkout Code
-        run: echo "Checkov Scan"
+        uses: subhamay-bhattacharyya-gha/cfn-validate-scan-action@main
+        with:
+          aws-role-arn: ${{ secrets.aws-role-arn }}
+          aws-region: ${{ vars.AWS_REGION }}
+          template-dir: cfn
+          template-file: root-stack-template.yaml
+          iac-framework: cloudformation
+          soft-fail: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📋 Summarize and Print Checkov Scan Report with Snippets
+        uses: subhamay-bhattacharyya-gha/checkov-report-action@main
 
   snyk-scan:
     name: 🧾 Snyk IaC Scan 🚧
