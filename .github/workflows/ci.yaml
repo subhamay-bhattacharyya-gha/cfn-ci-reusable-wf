@@ -12,7 +12,6 @@ on:
         description: "Environment to deploy to (e.g., dev, prod)."
         required: true
         type: string
-        default: ci
       cfn-template-file:
         description: "CloudFormation template file name."
         required: true
