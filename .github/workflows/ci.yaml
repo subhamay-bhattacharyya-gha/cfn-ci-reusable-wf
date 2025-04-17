@@ -183,7 +183,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
   checkov-scan:
-    name: 🧳 Checkov Scan 🚧
+    name: 🧳 Checkov Scan 🥂
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: [execution-path, detect-services, detect-changes]
