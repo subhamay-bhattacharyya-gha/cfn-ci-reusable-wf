@@ -160,16 +160,11 @@ jobs:
           echo '`${{ steps.set-path.outputs.execution-path }}`' >> $GITHUB_STEP_SUMMARY
 
   cfn-lint:
-    # if: ${{ toJSON(needs.execution-path.outputs.execution-path).IaC == 'true' }}
+    if: ${{ toJSON(needs.execution-path.outputs.execution-path).IaC == 'true' }}
     name: 📋 CFN Lint 🟢
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
-
-      - name: Build and Upload Lambda Package
-        run: |
-          echo "Execution path Json..."
-          echo '${{ toJson(needs.execution-path.outputs.execution-path) }}' | jq .
 
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -252,16 +247,12 @@ jobs:
   # Update build-* jobs for safe fromJSON use
   build-lambda:
     name: 🛠️ Lambda Package 🔴
+    if: ${{ toJSON(needs.execution-path.outputs.execution-path).lambda == true }}
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
 
-      - name: Build Lambda Package
-        if: ${{ toJSON(needs.execution-path.outputs.execution-path).lambda == false }}
-        run: echo "No changes in Lambda package, skipping build..."
-
       - name: Build and Upload Lambda Package
-        if: ${{ toJSON(needs.execution-path.outputs.execution-path).lambda == true }}
         run: echo "Uploading Lambda package..."
 
   # build-lambda-layer:
