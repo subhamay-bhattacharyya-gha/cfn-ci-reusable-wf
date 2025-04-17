@@ -169,6 +169,18 @@ jobs:
         run: |
           echo "Execution path Json..."
           echo '${{ toJson(needs.execution-path.outputs.execution-path) }}' | jq .
+          echo "-------------------------------------------"
+          echo "IaC:"
+          echo "${{ fromJson(needs.execution-path.outputs.execution-path).IaC }}"
+          echo "Lambda:"
+          echo "${{ fromJson(needs.execution-path.outputs.execution-path).lambda }}"
+          echo "State Machine:"
+          echo "${{ fromJson(needs.execution-path.outputs.execution-path).state-machine }}"
+          echo "Glue:"
+          echo "${{ fromJson(needs.execution-path.outputs.execution-path).glue }}"
+          echo "Lambda Layer:"
+          echo "${{ fromJson(needs.execution-path.outputs.execution-path).python-layer }}"
+
 
       - name: Checkout Code
         uses: actions/checkout@v4
