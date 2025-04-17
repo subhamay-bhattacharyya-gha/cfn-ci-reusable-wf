@@ -160,7 +160,7 @@ jobs:
           echo '`${{ steps.set-path.outputs.execution-path }}`' >> $GITHUB_STEP_SUMMARY
 
   cfn-lint:
-    if: ${{ toJSON(needs.execution-path.outputs.execution-path).IaC == 'true' }}
+    if: ${{ toJSON(needs.execution-path.outputs.execution-path).IaC == true }}
     name: 📋 CFN Lint 🟢
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
@@ -255,17 +255,18 @@ jobs:
       - name: Build and Upload Lambda Package
         run: echo "Uploading Lambda package..."
 
-  # build-lambda-layer:
-  #   name: 🛠️ Lambda Layer 🔴
-  #   runs-on: ubuntu-latest
-  #   needs: [execution-path, detect-services, detect-changes]
-  #   steps:
+  build-lambda-layer:
+    name: 🛠️ Lambda Layer 🔴
+    if: ${{ toJSON(needs.execution-path.outputs.execution-path).python-layer == true }}
+    runs-on: ubuntu-latest
+    needs: [execution-path, detect-services, detect-changes]
+    steps:
     
-  #     - name: Build Lambda Layer Package
-  #       run: echo "No changes in Lambda layer package, skipping build..."
+      - name: Build Lambda Layer Package
+        run: echo "No changes in Lambda layer package, skipping build..."
 
-  #     - name: Build and Upload Lambda Layer Package
-  #       run: echo "Build and Upload Lambda layer...."
+      - name: Build and Upload Lambda Layer Package
+        run: echo "Build and Upload Lambda layer...."
 
   # build-glue:
   #   name: 🛠️ Glue Script 🟡
