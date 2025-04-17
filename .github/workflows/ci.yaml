@@ -119,14 +119,13 @@ jobs:
     name: 🔎 Det. Exec Path 🟢
     runs-on: ubuntu-latest
     needs: [check-environments, check-branch-issue, detect-services, detect-changes]
+    outputs:
+      execution-path: ${{ steps.set-path.outputs.execution-path || '{}' }}
     steps:
       - name: Determine services used and repo changes
         run: |
-          # echo "Determine execution path"
-          # echo "## Execution Path" >> $GITHUB_STEP_SUMMARY
           echo "${{ needs.detect-changes.outputs.json-output }}" | base64 -d | jq . > ${{ github.workspace }}/repo-changes.json
           echo "${{ needs.detect-services.outputs.services-used }}"| sed -E 's/([{,])([^:{]+):/\1"\2":/g'|jq . > ${{ github.workspace }}/services-used.json
-          # echo "Has changes: ${{ needs.detect-changes.outputs.has-changes }}"
 
       - name: Determine Execution Path
         id: determine-path
@@ -216,7 +215,7 @@ jobs:
         uses: subhamay-bhattacharyya-gha/checkov-report-action@main
 
   snyk-scan:
-    name: 🗞 Snyk IaC Scan 🔴
+    name: 🗞 Snyk IaC Scan 🟡
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     if: ${{ inputs.snyk-token != '' }}
@@ -247,18 +246,18 @@ jobs:
       - name: Guardrail
         run: echo "Guard Rail"
 
+  # Update build-* jobs for safe fromJSON use
   build-lambda:
-
     name: 🛠️ Lambda Package 🔴
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
       - name: Build Lambda Package
-        if: ${{ contains(fromJSON(needs.execution-path.outputs || '{}'), 'lambda') && fromJSON(needs.execution-path.outputs).lambda == 'false' }}
+        if: ${{ needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).lambda == 'false' }}
         run: echo "No changes in Lambda package, skipping build..."
 
       - name: Build and Upload Lambda Package
-        if: ${{ contains(fromJSON(needs.execution-path.outputs || '{}'), 'lambda') && fromJSON(needs.execution-path.outputs).lambda == 'true' }}
+        if: ${{ needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).lambda == 'true' }}
         run: echo "Uploading Lambda package..."
 
   build-lambda-layer:
@@ -270,25 +269,24 @@ jobs:
         run: echo "Building Lambda layer..."
 
       - name: Build Lambda Layer Package
-        if: ${{ contains(fromJSON(needs.execution-path.outputs || '{}'), 'python-layer') && fromJSON(needs.execution-path.outputs).python-layer == 'false' }}
+        if: ${{ needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path)['python-layer'] == 'false' }}
         run: echo "No changes in Lambda layer package, skipping build..."
 
       - name: Build and Upload Lambda Layer Package
-        if: ${{ contains(fromJSON(needs.execution-path.outputs || '{}'), 'python-layer') && fromJSON(needs.execution-path.outputs).python-layer == 'true' }}
+        if: ${{ needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path)['python-layer'] == 'true' }}
         run: echo "Build and Upload Lambda layer...."
 
-
   build-glue:
-    name: 🛠️ Glue Script 🟡
+    name: 🛠️ Glue Script �\dfe1
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
       - name: Package Glue Script
-        if: ${{ contains(fromJSON(needs.execution-path.outputs || '{}'), 'glue') && fromJSON(needs.execution-path.outputs).glue == 'false' }}
+        if: ${{ needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).glue == 'false' }}
         run: echo "No changes found in Glue script, skipping build..."
 
       - name: Package and Upload Glue Script
-        if: ${{ contains(fromJSON(needs.execution-path.outputs || '{}'), 'glue') && fromJSON(needs.execution-path.outputs).glue == 'true' }}
+        if: ${{ needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).glue == 'true' }}
         run: echo "Uploading Glue script..."
 
   build-state-machine:
@@ -297,11 +295,11 @@ jobs:
     needs: [execution-path, detect-services, detect-changes]
     steps:
       - name: Package State Machine
-        if: ${{ contains(fromJSON(needs.execution-path.outputs || '{}'), 'state-machine') && fromJSON(needs.execution-path.outputs).state-machine == 'false' }}
-        run: echo "No changes in State Machine, skipping build.""
+        if: ${{ needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path)['state-machine'] == 'false' }}
+        run: echo "No changes in State Machine, skipping build."
 
       - name: Upload State Machine ASL
-        if: ${{ contains(fromJSON(needs.execution-path.outputs || '{}'), 'state-machine') && fromJSON(needs.execution-path.outputs).state-machine == 'true' }}
+        if: ${{ needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path)['state-machine'] == 'true' }}
         run: echo "Uploading State Machine ASL..."
 
 
