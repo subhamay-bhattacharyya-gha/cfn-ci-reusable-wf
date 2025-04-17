@@ -71,44 +71,44 @@ jobs:
         id: repo-changes
         uses: subhamay-bhattacharyya-gha/list-updated-files-action@main
 
-  # detect-services:
-  #   name: 🔎 Detect Services 🟢
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     services-used: ${{ steps.scan.outputs.services-used }}
-  #   steps:
-  #     - name: Checkout Code
-  #       uses: actions/checkout@v4
+  detect-services:
+    name: 🔎 Detect Services 🟢
+    runs-on: ubuntu-latest
+    outputs:
+      services-used: ${{ steps.scan.outputs.services-used }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-  #     - name: Scan AWS Services
-  #       id: scan
-  #       uses: subhamay-bhattacharyya-gha/scan-aws-services-action@main
+      - name: Scan AWS Services
+        id: scan
+        uses: subhamay-bhattacharyya-gha/scan-aws-services-action@main
 
-  #     - name: Save Detected Services to Environment Variable
-  #       run: |
-  #         echo "Detected Services: ${{ steps.scan.outputs.services-used }}"
-  #         echo 'SERVICES_USED=${{ steps.scan.outputs.services-used }}' >> $GITHUB_ENV
+      - name: Save Detected Services to Environment Variable
+        run: |
+          echo "Detected Services: ${{ steps.scan.outputs.services-used }}"
+          echo 'SERVICES_USED=${{ steps.scan.outputs.services-used }}' >> $GITHUB_ENV
 
-  #     - name: Print AWS Service Detection Table
-  #       run: |
-  #         echo "## AWS Services Detected" >> $GITHUB_STEP_SUMMARY
-  #         echo "" >> $GITHUB_STEP_SUMMARY
-  #         echo "| Service               | Used |" >> $GITHUB_STEP_SUMMARY
-  #         echo "|------------------------|------|" >> $GITHUB_STEP_SUMMARY
+      - name: Print AWS Service Detection Table
+        run: |
+          echo "## AWS Services Detected" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service               | Used |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------------------|------|" >> $GITHUB_STEP_SUMMARY
 
-  #         node -e "
-  #           try {
-  #             const result = JSON.parse(process.env.SERVICES_USED);
-  #             const emoji = (val) => val ? '✅' : '❌';
-  #             const rows = Object.entries(result)
-  #               .map(([key, val]) => \`| \${key.padEnd(22)} | \${emoji(val)} |\`)
-  #               .join('\n');
-  #             console.log(rows);
-  #           } catch (e) {
-  #             console.error('❌ Failed to parse SERVICES_USED:', e.message);
-  #             process.exit(1);
-  #           }
-  #         " >> $GITHUB_STEP_SUMMARY
+          node -e "
+            try {
+              const result = JSON.parse(process.env.SERVICES_USED);
+              const emoji = (val) => val ? '✅' : '❌';
+              const rows = Object.entries(result)
+                .map(([key, val]) => \`| \${key.padEnd(22)} | \${emoji(val)} |\`)
+                .join('\n');
+              console.log(rows);
+            } catch (e) {
+              console.error('❌ Failed to parse SERVICES_USED:', e.message);
+              process.exit(1);
+            }
+          " >> $GITHUB_STEP_SUMMARY
 
   # execution-path:
   #   name: 🔎 Det. Exec Path 🟡
