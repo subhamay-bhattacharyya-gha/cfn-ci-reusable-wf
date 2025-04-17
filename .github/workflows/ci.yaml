@@ -115,37 +115,54 @@ jobs:
           " >> $GITHUB_STEP_SUMMARY
 
   execution-path:
-    name: 🔎 Det. Exec Path 🟢
+    name: 🔎 Det. Exec Path 🟡
     runs-on: ubuntu-latest
     needs: [check-environments, check-branch-issue, detect-services, detect-changes]
     outputs:
-      execution-path: ${{ steps.set-path.outputs.execution-path || '{}' }}
-    steps:
-      - name: Determine services used and repo changes
-        run: |
-          echo "${{ needs.detect-changes.outputs.json-output }}" | base64 -d | jq . > ${{ github.workspace }}/repo-changes.json
-          echo "${{ needs.detect-services.outputs.services-used }}"| sed -E 's/([{,])([^:{]+):/\1"\2":/g'|jq . > ${{ github.workspace }}/services-used.json
+      execution-path: ${{ steps.set-path.outputs.execution-path }}
 
-      - name: Determine Execution Path
-        id: determine-path
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Determine services used and repo changes
+        id: prepare-inputs
         run: |
-          echo "Determine execution path"
-          cat ${{ github.workspace }}/repo-changes.json
-          echo "-------------------------------------------------------"
-          cat ${{ github.workspace }}/services-used.json
-          echo "-------------------------------------------------------"
+          echo "${{ needs.detect-changes.outputs.json-output }}" | base64 -d > repo-changes.json
+          sed -E 's/([{,])([^:{]+):/\1"\2":/g' <<< "${{ needs.detect-services.outputs.services-used }}" > services-used.json
+
+      - name: Debug parsed input files
+        run: |
+          echo "Repo Changes JSON"
+          cat repo-changes.json
+          echo "---------------------------"
+          echo "Services Used JSON"
+          cat services-used.json
 
       - name: Set Execution Path
         id: set-path
         uses: subhamay-bhattacharyya-gha/exec-path-action@feature/SB-0001-initial-release
         with:
-          files-modified: ${{ github.workspace }}/repo-changes.json
-          services-used: ${{ github.workspace }}/services-used.json
+          files-modified: repo-changes.json
+          services-used: services-used.json
 
-      - name: Debug Outputs
+      - name: Validate Execution Path Output
+        if: steps.set-path.outputs.execution-path == ''
         run: |
-          echo "Available Outputs:"
-          echo "${{ toJSON(steps.set-path.outputs.execution-path) }}"
+          echo "Execution path output is empty, setting default fallback."
+          echo "EXECUTION_PATH={}" >> $GITHUB_ENV
+
+      - name: Set Fallback Output if Needed
+        if: steps.set-path.outputs.execution-path == ''
+        run: echo "execution-path={}" >> $GITHUB_OUTPUT
+
+      - name: Print Execution Path
+        run: |
+          echo "Execution Path JSON:"
+          echo '${{ steps.set-path.outputs.execution-path }}'
+          echo "## Execution Path" >> $GITHUB_STEP_SUMMARY
+          echo '`${{ steps.set-path.outputs.execution-path }}`' >> $GITHUB_STEP_SUMMARY
+
         
 
   cfn-lint:
