@@ -7,11 +7,11 @@ description: |
 
 on:
   workflow_call:
-    # inputs:
-    #   environment:
-    #     description: "Environment to deploy to (e.g., dev, prod)."
-    #     required: true
-    #     type: string
+    inputs:
+      environment:
+        description: "Environment to deploy to (e.g., dev, prod)."
+        required: true
+        type: string
     #   cfn-template-file:
     #     description: "CloudFormation template file name."
     #     required: true
@@ -169,17 +169,17 @@ jobs:
         run: |
           echo "Execution path Json..."
           echo '${{ toJson(needs.execution-path.outputs.execution-path) }}' | jq .
-          echo "-------------------------------------------"
-          echo "IaC:"
-          echo "${{ fromJson(needs.execution-path.outputs.execution-path).IaC }}"
-          echo "Lambda:"
-          echo "${{ fromJson(needs.execution-path.outputs.execution-path).lambda }}"
-          echo "State Machine:"
-          echo "${{ fromJson(needs.execution-path.outputs.execution-path).state-machine }}"
-          echo "Glue:"
-          echo "${{ fromJson(needs.execution-path.outputs.execution-path).glue }}"
-          echo "Lambda Layer:"
-          echo "${{ fromJson(needs.execution-path.outputs.execution-path).python-layer }}"
+          # echo "-------------------------------------------"
+          # echo "IaC:"
+          # echo "${{ fromJson(needs.execution-path.outputs.execution-path).IaC }}"
+          # echo "Lambda:"
+          # echo "${{ fromJson(needs.execution-path.outputs.execution-path).lambda }}"
+          # echo "State Machine:"
+          # echo "${{ fromJson(needs.execution-path.outputs.execution-path).state-machine }}"
+          # echo "Glue:"
+          # echo "${{ fromJson(needs.execution-path.outputs.execution-path).glue }}"
+          # echo "Lambda Layer:"
+          # echo "${{ fromJson(needs.execution-path.outputs.execution-path).python-layer }}"
 
 
       - name: Checkout Code
@@ -191,56 +191,58 @@ jobs:
           template-dir: 'cfn'           # Optional, default is '.'
           fail-on-warnings: 'true'      # Optional, default is 'false'
 
-  # cfn-validate:
-  #   name: ✔️ CFN Validate 🟢
-  #   runs-on: ubuntu-latest
-  #   environment: ${{ inputs.environment }}
-  #   needs: [execution-path, detect-services, detect-changes]
-  #   steps:
-  #     - name: Checkout Code
-  #       uses: actions/checkout@v4
+  cfn-validate:
+    if: ${{ fromJSON(needs.execution-path.outputs.execution-path).IaC == 'true' }}
+    name: ✔️ CFN Validate 🟢
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    needs: [execution-path, detect-services, detect-changes]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-  #     - name: Configure AWS Credentials
-  #       uses: aws-actions/configure-aws-credentials@v3
-  #       with:
-  #         role-to-assume: ${{ secrets.aws-role-arn }}
-  #         aws-region: ${{ vars.AWS_REGION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: ${{ secrets.aws-role-arn }}
+          aws-region: ${{ vars.AWS_REGION }}
 
-  #     - name: Run CloudFormation Validation
-  #       id: validate
-  #       uses: subhamay-bhattacharyya-gha/cfn-validate-action@feature/SB-0001-initial-release
-  #       with:
-  #         template-dir: cfn
-  #         cfn-template-file: ${{ inputs.cfn-template-file }}
-  #         region: ${{ vars.AWS_REGION }}
+      - name: Run CloudFormation Validation
+        id: validate
+        uses: subhamay-bhattacharyya-gha/cfn-validate-action@feature/SB-0001-initial-release
+        with:
+          template-dir: cfn
+          cfn-template-file: ${{ inputs.cfn-template-file }}
+          region: ${{ vars.AWS_REGION }}
 
-  #     - name: Display Status
-  #       run: |
-  #         echo "Validation Status: ${{ steps.validate.outputs.status }}"
-  #         # echo "Validation Message: ${{ steps.validate.outputs.message }}"
-  #         echo "## CloudFormation Template Validation Status" >> $GITHUB_STEP_SUMMARY
-  #         echo "Validation Status: ${{ steps.validate.outputs.status }}" >> $GITHUB_STEP_SUMMARY
-  #         echo "" >> $GITHUB_STEP_SUMMARY
+      - name: Display Status
+        run: |
+          echo "Validation Status: ${{ steps.validate.outputs.status }}"
+          # echo "Validation Message: ${{ steps.validate.outputs.message }}"
+          echo "## CloudFormation Template Validation Status" >> $GITHUB_STEP_SUMMARY
+          echo "Validation Status: ${{ steps.validate.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
-  # checkov-scan:
-  #   name: 🧳 Checkov Scan 🟢
-  #   runs-on: ubuntu-latest
-  #   environment: ${{ inputs.environment }}
-  #   needs: [execution-path, detect-services, detect-changes]
-  #   steps:
-  #     - name: Checkout Code
-  #       uses: subhamay-bhattacharyya-gha/cfn-validate-scan-action@main
-  #       with:
-  #         aws-role-arn: ${{ secrets.aws-role-arn }}
-  #         aws-region: ${{ vars.AWS_REGION }}
-  #         template-dir: cfn
-  #         template-file: root-stack-template.yaml
-  #         iac-framework: cloudformation
-  #         soft-fail: true
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  checkov-scan:
+    if: ${{ fromJSON(needs.execution-path.outputs.execution-path).IaC == 'true' }}
+    name: 🧳 Checkov Scan 🟢
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    needs: [execution-path, detect-services, detect-changes]
+    steps:
+      - name: Checkout Code
+        uses: subhamay-bhattacharyya-gha/cfn-validate-scan-action@main
+        with:
+          aws-role-arn: ${{ secrets.aws-role-arn }}
+          aws-region: ${{ vars.AWS_REGION }}
+          template-dir: cfn
+          template-file: root-stack-template.yaml
+          iac-framework: cloudformation
+          soft-fail: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: 📋 Summarize and Print Checkov Scan Report with Snippets
-  #       uses: subhamay-bhattacharyya-gha/checkov-report-action@main
+      - name: 📋 Summarize and Print Checkov Scan Report with Snippets
+        uses: subhamay-bhattacharyya-gha/checkov-report-action@main
 
   # snyk-scan:
   #   name: 🗞 Snyk IaC Scan 🟡
@@ -258,19 +260,20 @@ jobs:
   #     - name: Guardrail
   #       run: echo "Guard Rail"
 
-  # # Update build-* jobs for safe fromJSON use
-  # build-lambda:
-  #   name: 🛠️ Lambda Package 🔴
-  #   runs-on: ubuntu-latest
-  #   needs: [execution-path, detect-services, detect-changes]
-  #   steps:
+  # Update build-* jobs for safe fromJSON use
+  build-lambda:
+    name: 🛠️ Lambda Package 🔴
+    runs-on: ubuntu-latest
+    needs: [execution-path, detect-services, detect-changes]
+    steps:
 
-  #     - name: Build Lambda Package
-  #       run: echo "No changes in Lambda package, skipping build..."
+      - name: Build Lambda Package
+        if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'false' }}
+        run: echo "No changes in Lambda package, skipping build..."
 
-  #     - name: Build and Upload Lambda Package
-  #       # if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'true' }}
-  #       run: echo "Uploading Lambda package..."
+      - name: Build and Upload Lambda Package
+        if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'true' }}
+        run: echo "Uploading Lambda package..."
 
   # build-lambda-layer:
   #   name: 🛠️ Lambda Layer 🔴
