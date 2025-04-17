@@ -58,18 +58,18 @@ jobs:
           echo "Branch Issue: ${{ steps.branch-issue.outputs.issue-number }}"
           echo "Branch Issue: ${{ steps.branch-issue.outputs.issue-exists }}"
 
-  # detect-changes:
-  #   name: 🔎 Detect Changes 🟢
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     files-changed: ${{ steps.repo-changes.outputs.files-changed }}
-  #     json-output: ${{ steps.repo-changes.outputs.json-output }}
-  #     has-changes: ${{ steps.repo-changes.outputs.has-changes }}
+  detect-changes:
+    name: 🔎 Detect Changes 🟢
+    runs-on: ubuntu-latest
+    outputs:
+      files-changed: ${{ steps.repo-changes.outputs.files-changed }}
+      json-output: ${{ steps.repo-changes.outputs.json-output }}
+      has-changes: ${{ steps.repo-changes.outputs.has-changes }}
 
-  #   steps:
-  #     - name: Detect repository changes
-  #       id: repo-changes
-  #       uses: subhamay-bhattacharyya-gha/list-updated-files-action@main
+    steps:
+      - name: Detect repository changes
+        id: repo-changes
+        uses: subhamay-bhattacharyya-gha/list-updated-files-action@main
 
   # detect-services:
   #   name: 🔎 Detect Services 🟢
