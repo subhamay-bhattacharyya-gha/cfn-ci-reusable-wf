@@ -137,6 +137,13 @@ jobs:
           cat ${{ github.workspace }}/services-used.json
           echo "-------------------------------------------------------"
 
+      - name: Set Execution Path
+        id: set-path
+        uses: subhamay-bhattacharyya-gha/exec-path-action@feature/SB-0001-initial-release
+        with:
+          files-modified: ${{ github.workspace }}/repo-changes.json
+          services-used: ${{ github.workspace }}/services-used.json
+
   cfn-lint:
     name: 📋 CFN Lint 🟢
     runs-on: ubuntu-latest
