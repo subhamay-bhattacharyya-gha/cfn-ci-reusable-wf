@@ -216,15 +216,28 @@ jobs:
         uses: subhamay-bhattacharyya-gha/checkov-report-action@main
 
   snyk-scan:
-    name: 🧾 Snyk IaC Scan 🔴
+    name: 🗞 Snyk IaC Scan 🔴
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
-    # env:
-    #   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-    #   SNYK_ORG_ID: ${{ secrets.SNYK_ORGANIZATION_ID }}
+    if: ${{ inputs.snyk-token != '' }}
+    env:
+      SNYK_TOKEN: ${{ inputs.snyk-token }}
     steps:
-      - name: Snyk Scan
-        run: echo "Snyk Scan"
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Run Snyk IaC Scan
+        run: |
+          snyk iac test cfn/ --report --severity-threshold=medium || true
+
+      - name: Save Snyk Report
+        run: |
+          echo "## Snyk IaC Scan Summary" >> $GITHUB_STEP_SUMMARY
+          snyk iac test cfn/ --json > snyk-report.json || true
+          echo "Results saved to snyk-report.json"
 
   guard-rail:
     name: 💂🏻‍♀️ Infra Guard Rail 🔴
