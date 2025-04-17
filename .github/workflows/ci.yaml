@@ -25,8 +25,8 @@ on:
     #     description: "AWS role ARN for assuming a role."
     #     required: true
 
-# permissions:
-#   id-token: write
+permissions:
+  id-token: write
 #   contents: read
 #   actions: read
 
@@ -42,21 +42,21 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-  # check-branch-issue:
-  #   name: 🔎 Branch Issue 🟢
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Verify branch issue
-  #       id: branch-issue
-  #       uses: subhamay-bhattacharyya-gha/branch-issue-action@main
+  check-branch-issue:
+    name: 🔎 Branch Issue 🟢
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify branch issue
+        id: branch-issue
+        uses: subhamay-bhattacharyya-gha/branch-issue-action@main
 
-  #       with:
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Print Outputs
-  #       run: |
-  #         echo "Branch Issue: ${{ steps.branch-issue.outputs.issue-number }}"
-  #         echo "Branch Issue: ${{ steps.branch-issue.outputs.issue-exists }}"
+      - name: Print Outputs
+        run: |
+          echo "Branch Issue: ${{ steps.branch-issue.outputs.issue-number }}"
+          echo "Branch Issue: ${{ steps.branch-issue.outputs.issue-exists }}"
 
   # detect-changes:
   #   name: 🔎 Detect Changes 🟢
