@@ -144,12 +144,11 @@ jobs:
           files-modified: ${{ github.workspace }}/repo-changes.json
           services-used: ${{ github.workspace }}/services-used.json
 
-      - name: Print Execution Path
+      - name: Debug Outputs
         run: |
-          
-          echo "## Execution Path" >> $GITHUB_STEP_SUMMARY
-          echo "Execution Path: ${{ steps.set-path.outputs.top-level-dirs }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Available Outputs:"
+          echo "${{ toJSON(steps.set-path.outputs) }}"
+        
 
   cfn-lint:
     name: 📋 CFN Lint 🟢
