@@ -12,10 +12,10 @@ on:
         description: "Environment to deploy to (e.g., dev, prod)."
         required: true
         type: string
-    #   cfn-template-file:
-    #     description: "CloudFormation template file name."
-    #     required: true
-    #     type: string
+      cfn-template-file:
+        description: "CloudFormation template file name."
+        required: true
+        type: string
     #   cfn-params-file:
     #     description: "CloudFormation parameters file."
     #     required: true
