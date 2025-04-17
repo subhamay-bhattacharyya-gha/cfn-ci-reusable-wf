@@ -235,9 +235,10 @@ jobs:
         run: echo "Guard Rail"
 
   build-lambda:
+
     name: 🛠️ Lambda Package 🔴
     runs-on: ubuntu-latest
-    # if: ${{ inputs.lambda == true }}
+    if: ${{ contains(fromJSON(needs.execution-path.outputs || '{}'), 'lambda') && fromJSON(needs.execution-path.outputs).lambda == 'true' }}
     needs: [execution-path, detect-services, detect-changes]
     steps:
       - name: Build Lambda Package
@@ -246,7 +247,7 @@ jobs:
   build-lambda-layer:
     name: 🛠️ Lambda Layer 🔴
     runs-on: ubuntu-latest
-    # if: ${{ inputs.lambda == true }}
+    if: ${{ contains(fromJSON(needs.execution-path.outputs || '{}'), 'python-layer') && fromJSON(needs.execution-path.outputs).python-layer == 'true' }}  
     needs: [execution-path, detect-services, detect-changes]
     steps:
       - name: Build Lambda Layer
@@ -255,7 +256,7 @@ jobs:
   build-glue:
     name: 🛠️ Glue Script 🔴
     runs-on: ubuntu-latest
-    # if: ${{ inputs.glue == true }}
+    if: ${{ contains(fromJSON(needs.execution-path.outputs || '{}'), 'glue') && fromJSON(needs.execution-path.outputs).glue == 'true' }}
     needs: [execution-path, detect-services, detect-changes]
     steps:
       - name: Package Glue Script
@@ -264,7 +265,7 @@ jobs:
   build-state-machine:
     name: 🛠️ State Machine 🔴
     runs-on: ubuntu-latest
-    # if: ${{ inputs.state-machine == true }}
+    if: ${{ contains(fromJSON(needs.execution-path.outputs || '{}'), 'state-machine') && fromJSON(needs.execution-path.outputs).state-machine == 'true' }}
     needs: [execution-path, detect-services, detect-changes]
     steps:
       - name: Deploy State Machine
