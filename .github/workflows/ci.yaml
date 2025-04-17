@@ -116,7 +116,7 @@ jobs:
           " >> $GITHUB_STEP_SUMMARY
 
   execution-path:
-    name: 🔎 Det. Exec Path 🟡
+    name: 🔎 Det. Exec Path 🟢
     runs-on: ubuntu-latest
     needs: [check-environments, check-branch-issue, detect-services, detect-changes]
     steps:
@@ -147,7 +147,7 @@ jobs:
       - name: Debug Outputs
         run: |
           echo "Available Outputs:"
-          echo "${{ toJSON(steps.set-path.outputs) }}"
+          echo "${{ toJSON(steps.set-path.outputs.execution-path) }}"
         
 
   cfn-lint:
