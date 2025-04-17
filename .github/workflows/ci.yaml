@@ -167,8 +167,8 @@ jobs:
 
       - name: Build and Upload Lambda Package
         run: |
-          echo "Uploading Lambda package..."
-          echo "${{ needs.execution-path.outputs.execution-path }}"
+          echo "Execution path Json..."
+          echo '${{ toJson(needs.execution-path.outputs.execution-path) }}' | jq .
 
       - name: Checkout Code
         uses: actions/checkout@v4
