@@ -160,19 +160,23 @@ jobs:
           echo '`${{ steps.set-path.outputs.execution-path }}`' >> $GITHUB_STEP_SUMMARY
 
   cfn-lint:
-    # if: ${{ toJSON(needs.execution-path.outputs.execution-path).IaC == true }}
     name: 📋 CFN Lint 🟢
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
+    # if: ${{ fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
     steps:
-
-      - name: Print Debug Info
+      - name: Print Execution Path Debug Info
         run: |
-          echo "Execution Path: ${{ toJSON(needs.execution-path.outputs.execution-path) }}"
-          echo "IaC: ${{ toJSON(needs.execution-path.outputs.execution-path).IaC }}"
-          echo "Lambda: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda }}"
+          echo "🔍 Raw Execution Path JSON:"
+          echo '${{ toJSON(needs.execution-path.outputs.execution-path) }}' | jq .
 
-
+          echo "-------------------------------------------"
+          echo "✅ IaC: ${{ fromJSON(needs.execution-path.outputs.execution-path).IaC }}"
+          echo "✅ Lambda: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda }}"
+          echo "✅ Glue: ${{ fromJSON(needs.execution-path.outputs.execution-path).glue }}"
+          echo "✅ State Machine: ${{ fromJSON(needs.execution-path.outputs.execution-path).state-machine }}"
+          echo "✅ Python Layer: ${{ fromJSON(needs.execution-path.outputs.execution-path)['python-layer'] }}"
+      
       - name: Checkout Code
         uses: actions/checkout@v4
 
