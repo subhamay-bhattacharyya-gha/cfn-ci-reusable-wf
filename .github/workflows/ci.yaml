@@ -250,6 +250,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
+      - name: Print Debug Info
+        run: |
+          echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
+          
       - name: Build Lambda Package
         if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'false' }}
         run: echo "No changes in Lambda package, skipping build..."
@@ -263,9 +267,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
-      - name: Build Lambda Layer
-        run: echo "Building Lambda layer..."
-
+      - name: Print Debug Info
+        run: |
+          echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
+    
       - name: Build Lambda Layer Package
         if: ${{ fromJSON(needs.execution-path.outputs.execution-path)['python-layer'] == 'false' }}
         run: echo "No changes in Lambda layer package, skipping build..."
@@ -279,6 +284,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
+
+      - name: Print Debug Info
+        run: |
+          echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
+
       - name: Package Glue Script
         if: ${{ fromJSON(needs.execution-path.outputs.execution-path).glue == 'false' }}
         run: echo "No changes found in Glue script, skipping build..."
@@ -292,6 +302,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
+      - name: Print Debug Info
+        run: |
+          echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
+
       - name: Package State Machine
         if: ${{ fromJSON(needs.execution-path.outputs.execution-path)['state-machine'] == 'false' }}
         run: echo "No changes in State Machine, skipping build."
