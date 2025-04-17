@@ -25,10 +25,10 @@ on:
     #     description: "AWS role ARN for assuming a role."
     #     required: true
 
-permissions:
-  id-token: write
-  contents: read
-  actions: read
+# permissions:
+#   id-token: write
+#   contents: read
+#   actions: read
 
 
 jobs:
