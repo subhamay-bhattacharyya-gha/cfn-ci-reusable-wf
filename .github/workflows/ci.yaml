@@ -252,8 +252,8 @@ jobs:
     steps:
       - name: Print Debug Info
         run: |
-          echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
-          
+          echo "${{ toJSON(needs.execution-path.outputs.execution-path) }}"
+
       - name: Build Lambda Package
         if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'false' }}
         run: echo "No changes in Lambda package, skipping build..."
@@ -267,9 +267,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
-      - name: Print Debug Info
-        run: |
-          echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
+      # - name: Print Debug Info
+      #   run: |
+      #     echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
     
       - name: Build Lambda Layer Package
         if: ${{ fromJSON(needs.execution-path.outputs.execution-path)['python-layer'] == 'false' }}
@@ -285,9 +285,9 @@ jobs:
     needs: [execution-path, detect-services, detect-changes]
     steps:
 
-      - name: Print Debug Info
-        run: |
-          echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
+      # - name: Print Debug Info
+      #   run: |
+      #     echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
 
       - name: Package Glue Script
         if: ${{ fromJSON(needs.execution-path.outputs.execution-path).glue == 'false' }}
@@ -302,9 +302,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
-      - name: Print Debug Info
-        run: |
-          echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
+      # - name: Print Debug Info
+      #   run: |
+      #     echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
 
       - name: Package State Machine
         if: ${{ fromJSON(needs.execution-path.outputs.execution-path)['state-machine'] == 'false' }}
