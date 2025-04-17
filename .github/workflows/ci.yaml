@@ -144,6 +144,13 @@ jobs:
           files-modified: ${{ github.workspace }}/repo-changes.json
           services-used: ${{ github.workspace }}/services-used.json
 
+      - name: Print Execution Path
+        run: |
+          
+          echo "## Execution Path" >> $GITHUB_STEP_SUMMARY
+          echo "Execution Path: ${{ steps.set-path.outputs.top-level-dirs }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
   cfn-lint:
     name: 📋 CFN Lint 🟢
     runs-on: ubuntu-latest
