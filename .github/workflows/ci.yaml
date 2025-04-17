@@ -24,9 +24,6 @@ on:
       aws-role-arn:
         description: "AWS role ARN for assuming a role."
         required: true
-      snyk-token:
-        description: "Snyk token for authentication."
-        required: false
 
 permissions:
   id-token: write
