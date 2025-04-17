@@ -250,9 +250,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
-      - name: Print Debug Info
-        run: |
-          echo "${{ toJSON(needs.execution-path.outputs.execution-path) }}"
+      # - name: Print Debug Info
+      #   run: |
+      #     echo "${{ toJSON(needs.execution-path.outputs.execution-path) }}"
 
       - name: Build Lambda Package
         if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'false' }}
