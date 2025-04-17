@@ -42,287 +42,287 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-  check-branch-issue:
-    name: 🔎 Branch Issue 🟢
-    runs-on: ubuntu-latest
-    steps:
-      - name: Verify branch issue
-        id: branch-issue
-        uses: subhamay-bhattacharyya-gha/branch-issue-action@main
+  # check-branch-issue:
+  #   name: 🔎 Branch Issue 🟢
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Verify branch issue
+  #       id: branch-issue
+  #       uses: subhamay-bhattacharyya-gha/branch-issue-action@main
 
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Print Outputs
-        run: |
-          echo "Branch Issue: ${{ steps.branch-issue.outputs.issue-number }}"
-          echo "Branch Issue: ${{ steps.branch-issue.outputs.issue-exists }}"
+  #     - name: Print Outputs
+  #       run: |
+  #         echo "Branch Issue: ${{ steps.branch-issue.outputs.issue-number }}"
+  #         echo "Branch Issue: ${{ steps.branch-issue.outputs.issue-exists }}"
 
-  detect-changes:
-    name: 🔎 Detect Changes 🟢
-    runs-on: ubuntu-latest
-    outputs:
-      files-changed: ${{ steps.repo-changes.outputs.files-changed }}
-      json-output: ${{ steps.repo-changes.outputs.json-output }}
-      has-changes: ${{ steps.repo-changes.outputs.has-changes }}
+  # detect-changes:
+  #   name: 🔎 Detect Changes 🟢
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     files-changed: ${{ steps.repo-changes.outputs.files-changed }}
+  #     json-output: ${{ steps.repo-changes.outputs.json-output }}
+  #     has-changes: ${{ steps.repo-changes.outputs.has-changes }}
 
-    steps:
-      - name: Detect repository changes
-        id: repo-changes
-        uses: subhamay-bhattacharyya-gha/list-updated-files-action@main
+  #   steps:
+  #     - name: Detect repository changes
+  #       id: repo-changes
+  #       uses: subhamay-bhattacharyya-gha/list-updated-files-action@main
 
-  detect-services:
-    name: 🔎 Detect Services 🟢
-    runs-on: ubuntu-latest
-    outputs:
-      services-used: ${{ steps.scan.outputs.services-used }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+  # detect-services:
+  #   name: 🔎 Detect Services 🟢
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     services-used: ${{ steps.scan.outputs.services-used }}
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
 
-      - name: Scan AWS Services
-        id: scan
-        uses: subhamay-bhattacharyya-gha/scan-aws-services-action@main
+  #     - name: Scan AWS Services
+  #       id: scan
+  #       uses: subhamay-bhattacharyya-gha/scan-aws-services-action@main
 
-      - name: Save Detected Services to Environment Variable
-        run: |
-          echo "Detected Services: ${{ steps.scan.outputs.services-used }}"
-          echo 'SERVICES_USED=${{ steps.scan.outputs.services-used }}' >> $GITHUB_ENV
+  #     - name: Save Detected Services to Environment Variable
+  #       run: |
+  #         echo "Detected Services: ${{ steps.scan.outputs.services-used }}"
+  #         echo 'SERVICES_USED=${{ steps.scan.outputs.services-used }}' >> $GITHUB_ENV
 
-      - name: Print AWS Service Detection Table
-        run: |
-          echo "## AWS Services Detected" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Service               | Used |" >> $GITHUB_STEP_SUMMARY
-          echo "|------------------------|------|" >> $GITHUB_STEP_SUMMARY
+  #     - name: Print AWS Service Detection Table
+  #       run: |
+  #         echo "## AWS Services Detected" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
+  #         echo "| Service               | Used |" >> $GITHUB_STEP_SUMMARY
+  #         echo "|------------------------|------|" >> $GITHUB_STEP_SUMMARY
 
-          node -e "
-            try {
-              const result = JSON.parse(process.env.SERVICES_USED);
-              const emoji = (val) => val ? '✅' : '❌';
-              const rows = Object.entries(result)
-                .map(([key, val]) => \`| \${key.padEnd(22)} | \${emoji(val)} |\`)
-                .join('\n');
-              console.log(rows);
-            } catch (e) {
-              console.error('❌ Failed to parse SERVICES_USED:', e.message);
-              process.exit(1);
-            }
-          " >> $GITHUB_STEP_SUMMARY
+  #         node -e "
+  #           try {
+  #             const result = JSON.parse(process.env.SERVICES_USED);
+  #             const emoji = (val) => val ? '✅' : '❌';
+  #             const rows = Object.entries(result)
+  #               .map(([key, val]) => \`| \${key.padEnd(22)} | \${emoji(val)} |\`)
+  #               .join('\n');
+  #             console.log(rows);
+  #           } catch (e) {
+  #             console.error('❌ Failed to parse SERVICES_USED:', e.message);
+  #             process.exit(1);
+  #           }
+  #         " >> $GITHUB_STEP_SUMMARY
 
-  execution-path:
-    name: 🔎 Det. Exec Path 🟡
-    runs-on: ubuntu-latest
-    needs: [check-environments, check-branch-issue, detect-services, detect-changes]
-    outputs:
-      execution-path: ${{ steps.set-path.outputs.execution-path }}
+  # execution-path:
+  #   name: 🔎 Det. Exec Path 🟡
+  #   runs-on: ubuntu-latest
+  #   needs: [check-environments, check-branch-issue, detect-services, detect-changes]
+  #   outputs:
+  #     execution-path: ${{ steps.set-path.outputs.execution-path }}
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
 
-      - name: Determine services used and repo changes
-        id: prepare-inputs
-        run: |
-          echo "${{ needs.detect-changes.outputs.json-output }}" | base64 -d > repo-changes.json
-          sed -E 's/([{,])([^:{]+):/\1"\2":/g' <<< "${{ needs.detect-services.outputs.services-used }}" > services-used.json
+  #     - name: Determine services used and repo changes
+  #       id: prepare-inputs
+  #       run: |
+  #         echo "${{ needs.detect-changes.outputs.json-output }}" | base64 -d > repo-changes.json
+  #         sed -E 's/([{,])([^:{]+):/\1"\2":/g' <<< "${{ needs.detect-services.outputs.services-used }}" > services-used.json
 
-      - name: Debug parsed input files
-        run: |
-          echo "Repo Changes JSON"
-          cat repo-changes.json
-          echo "---------------------------"
-          echo "Services Used JSON"
-          cat services-used.json
+  #     - name: Debug parsed input files
+  #       run: |
+  #         echo "Repo Changes JSON"
+  #         cat repo-changes.json
+  #         echo "---------------------------"
+  #         echo "Services Used JSON"
+  #         cat services-used.json
 
-      - name: Set Execution Path
-        id: set-path
-        uses: subhamay-bhattacharyya-gha/exec-path-action@feature/SB-0001-initial-release
-        with:
-          files-modified: repo-changes.json
-          services-used: services-used.json
+  #     - name: Set Execution Path
+  #       id: set-path
+  #       uses: subhamay-bhattacharyya-gha/exec-path-action@feature/SB-0001-initial-release
+  #       with:
+  #         files-modified: repo-changes.json
+  #         services-used: services-used.json
 
-      - name: Validate Execution Path Output
-        if: steps.set-path.outputs.execution-path == ''
-        run: |
-          echo "Execution path output is empty, setting default fallback."
-          echo "EXECUTION_PATH={}" >> $GITHUB_ENV
+  #     - name: Validate Execution Path Output
+  #       if: steps.set-path.outputs.execution-path == ''
+  #       run: |
+  #         echo "Execution path output is empty, setting default fallback."
+  #         echo "EXECUTION_PATH={}" >> $GITHUB_ENV
 
-      - name: Set Fallback Output if Needed
-        if: steps.set-path.outputs.execution-path == ''
-        run: echo "execution-path={}" >> $GITHUB_OUTPUT
+  #     - name: Set Fallback Output if Needed
+  #       if: steps.set-path.outputs.execution-path == ''
+  #       run: echo "execution-path={}" >> $GITHUB_OUTPUT
 
-      - name: Print Execution Path
-        run: |
-          echo "Execution Path JSON:"
-          echo '${{ steps.set-path.outputs.execution-path }}'
-          echo "## Execution Path" >> $GITHUB_STEP_SUMMARY
-          echo '`${{ steps.set-path.outputs.execution-path }}`' >> $GITHUB_STEP_SUMMARY
+  #     - name: Print Execution Path
+  #       run: |
+  #         echo "Execution Path JSON:"
+  #         echo '${{ steps.set-path.outputs.execution-path }}'
+  #         echo "## Execution Path" >> $GITHUB_STEP_SUMMARY
+  #         echo '`${{ steps.set-path.outputs.execution-path }}`' >> $GITHUB_STEP_SUMMARY
 
-  cfn-lint:
-    name: 📋 CFN Lint 🟢
-    runs-on: ubuntu-latest
-    needs: [execution-path, detect-services, detect-changes]
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+  # cfn-lint:
+  #   name: 📋 CFN Lint 🟢
+  #   runs-on: ubuntu-latest
+  #   needs: [execution-path, detect-services, detect-changes]
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
 
-      - name: Lint CloudFormation templates
-        uses: subhamay-bhattacharyya-gha/cfn-lint-action@feature/SB-0001-initial-release
-        with:
-          template-dir: 'cfn'           # Optional, default is '.'
-          fail-on-warnings: 'true'      # Optional, default is 'false'
+  #     - name: Lint CloudFormation templates
+  #       uses: subhamay-bhattacharyya-gha/cfn-lint-action@feature/SB-0001-initial-release
+  #       with:
+  #         template-dir: 'cfn'           # Optional, default is '.'
+  #         fail-on-warnings: 'true'      # Optional, default is 'false'
 
-  cfn-validate:
-    name: ✔️ CFN Validate 🟢
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    needs: [execution-path, detect-services, detect-changes]
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+  # cfn-validate:
+  #   name: ✔️ CFN Validate 🟢
+  #   runs-on: ubuntu-latest
+  #   environment: ${{ inputs.environment }}
+  #   needs: [execution-path, detect-services, detect-changes]
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          role-to-assume: ${{ secrets.aws-role-arn }}
-          aws-region: ${{ vars.AWS_REGION }}
+  #     - name: Configure AWS Credentials
+  #       uses: aws-actions/configure-aws-credentials@v3
+  #       with:
+  #         role-to-assume: ${{ secrets.aws-role-arn }}
+  #         aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Run CloudFormation Validation
-        id: validate
-        uses: subhamay-bhattacharyya-gha/cfn-validate-action@feature/SB-0001-initial-release
-        with:
-          template-dir: cfn
-          cfn-template-file: ${{ inputs.cfn-template-file }}
-          region: ${{ vars.AWS_REGION }}
+  #     - name: Run CloudFormation Validation
+  #       id: validate
+  #       uses: subhamay-bhattacharyya-gha/cfn-validate-action@feature/SB-0001-initial-release
+  #       with:
+  #         template-dir: cfn
+  #         cfn-template-file: ${{ inputs.cfn-template-file }}
+  #         region: ${{ vars.AWS_REGION }}
 
-      - name: Display Status
-        run: |
-          echo "Validation Status: ${{ steps.validate.outputs.status }}"
-          # echo "Validation Message: ${{ steps.validate.outputs.message }}"
-          echo "## CloudFormation Template Validation Status" >> $GITHUB_STEP_SUMMARY
-          echo "Validation Status: ${{ steps.validate.outputs.status }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+  #     - name: Display Status
+  #       run: |
+  #         echo "Validation Status: ${{ steps.validate.outputs.status }}"
+  #         # echo "Validation Message: ${{ steps.validate.outputs.message }}"
+  #         echo "## CloudFormation Template Validation Status" >> $GITHUB_STEP_SUMMARY
+  #         echo "Validation Status: ${{ steps.validate.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
 
-  checkov-scan:
-    name: 🧳 Checkov Scan 🟢
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    needs: [execution-path, detect-services, detect-changes]
-    steps:
-      - name: Checkout Code
-        uses: subhamay-bhattacharyya-gha/cfn-validate-scan-action@main
-        with:
-          aws-role-arn: ${{ secrets.aws-role-arn }}
-          aws-region: ${{ vars.AWS_REGION }}
-          template-dir: cfn
-          template-file: root-stack-template.yaml
-          iac-framework: cloudformation
-          soft-fail: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+  # checkov-scan:
+  #   name: 🧳 Checkov Scan 🟢
+  #   runs-on: ubuntu-latest
+  #   environment: ${{ inputs.environment }}
+  #   needs: [execution-path, detect-services, detect-changes]
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: subhamay-bhattacharyya-gha/cfn-validate-scan-action@main
+  #       with:
+  #         aws-role-arn: ${{ secrets.aws-role-arn }}
+  #         aws-region: ${{ vars.AWS_REGION }}
+  #         template-dir: cfn
+  #         template-file: root-stack-template.yaml
+  #         iac-framework: cloudformation
+  #         soft-fail: true
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📋 Summarize and Print Checkov Scan Report with Snippets
-        uses: subhamay-bhattacharyya-gha/checkov-report-action@main
+  #     - name: 📋 Summarize and Print Checkov Scan Report with Snippets
+  #       uses: subhamay-bhattacharyya-gha/checkov-report-action@main
 
-  snyk-scan:
-    name: 🗞 Snyk IaC Scan 🟡
-    runs-on: ubuntu-latest
-    needs: [execution-path, detect-services, detect-changes]
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+  # snyk-scan:
+  #   name: 🗞 Snyk IaC Scan 🟡
+  #   runs-on: ubuntu-latest
+  #   needs: [execution-path, detect-services, detect-changes]
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
 
-  guard-rail:
-    name: 💂🏻‍♀️ Infra Guard Rail 🔴
-    runs-on: ubuntu-latest
-    needs: [execution-path, detect-services, detect-changes]
-    steps:
-      - name: Guardrail
-        run: echo "Guard Rail"
+  # guard-rail:
+  #   name: 💂🏻‍♀️ Infra Guard Rail 🔴
+  #   runs-on: ubuntu-latest
+  #   needs: [execution-path, detect-services, detect-changes]
+  #   steps:
+  #     - name: Guardrail
+  #       run: echo "Guard Rail"
 
-  # Update build-* jobs for safe fromJSON use
-  build-lambda:
-    name: 🛠️ Lambda Package 🔴
-    runs-on: ubuntu-latest
-    needs: [execution-path, detect-services, detect-changes]
-    steps:
+  # # Update build-* jobs for safe fromJSON use
+  # build-lambda:
+  #   name: 🛠️ Lambda Package 🔴
+  #   runs-on: ubuntu-latest
+  #   needs: [execution-path, detect-services, detect-changes]
+  #   steps:
 
-      - name: Build Lambda Package
-        run: echo "No changes in Lambda package, skipping build..."
+  #     - name: Build Lambda Package
+  #       run: echo "No changes in Lambda package, skipping build..."
 
-      - name: Build and Upload Lambda Package
-        # if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'true' }}
-        run: echo "Uploading Lambda package..."
+  #     - name: Build and Upload Lambda Package
+  #       # if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'true' }}
+  #       run: echo "Uploading Lambda package..."
 
-  build-lambda-layer:
-    name: 🛠️ Lambda Layer 🔴
-    runs-on: ubuntu-latest
-    needs: [execution-path, detect-services, detect-changes]
-    steps:
+  # build-lambda-layer:
+  #   name: 🛠️ Lambda Layer 🔴
+  #   runs-on: ubuntu-latest
+  #   needs: [execution-path, detect-services, detect-changes]
+  #   steps:
     
-      - name: Build Lambda Layer Package
-        run: echo "No changes in Lambda layer package, skipping build..."
+  #     - name: Build Lambda Layer Package
+  #       run: echo "No changes in Lambda layer package, skipping build..."
 
-      - name: Build and Upload Lambda Layer Package
-        run: echo "Build and Upload Lambda layer...."
+  #     - name: Build and Upload Lambda Layer Package
+  #       run: echo "Build and Upload Lambda layer...."
 
-  build-glue:
-    name: 🛠️ Glue Script 🟡
-    runs-on: ubuntu-latest
-    needs: [execution-path, detect-services, detect-changes]
-    steps:
+  # build-glue:
+  #   name: 🛠️ Glue Script 🟡
+  #   runs-on: ubuntu-latest
+  #   needs: [execution-path, detect-services, detect-changes]
+  #   steps:
 
-      - name: Package Glue Script
-        run: echo "No changes found in Glue script, skipping build..."
+  #     - name: Package Glue Script
+  #       run: echo "No changes found in Glue script, skipping build..."
 
-      - name: Package and Upload Glue Script
-        run: echo "Uploading Glue script..."
+  #     - name: Package and Upload Glue Script
+  #       run: echo "Uploading Glue script..."
 
-  build-state-machine:
-    name: 🛠️ State Machine 🟡
-    runs-on: ubuntu-latest
-    needs: [execution-path, detect-services, detect-changes]
-    steps:
+  # build-state-machine:
+  #   name: 🛠️ State Machine 🟡
+  #   runs-on: ubuntu-latest
+  #   needs: [execution-path, detect-services, detect-changes]
+  #   steps:
 
-      - name: Package State Machine
-        run: echo "No changes in State Machine, skipping build."
+  #     - name: Package State Machine
+  #       run: echo "No changes in State Machine, skipping build."
 
-      - name: Upload State Machine ASL
-        run: echo "Uploading State Machine ASL..."
+  #     - name: Upload State Machine ASL
+  #       run: echo "Uploading State Machine ASL..."
 
 
-  ci-build:
-    name: 📦 CI Build 🔴
-    runs-on: ubuntu-latest
-    if: always()
-    needs:
-      - cfn-lint
-      - cfn-validate
-      - checkov-scan
-      - snyk-scan
-      - guard-rail
-      - build-lambda
-      - build-lambda-layer
-      - build-glue
-      - build-state-machine
-    steps:
-      - name: Finalize CI Build
-        run: echo "CI build completed regardless of individual builds."
+  # ci-build:
+  #   name: 📦 CI Build 🔴
+  #   runs-on: ubuntu-latest
+  #   if: always()
+  #   needs:
+  #     - cfn-lint
+  #     - cfn-validate
+  #     - checkov-scan
+  #     - snyk-scan
+  #     - guard-rail
+  #     - build-lambda
+  #     - build-lambda-layer
+  #     - build-glue
+  #     - build-state-machine
+  #   steps:
+  #     - name: Finalize CI Build
+  #       run: echo "CI build completed regardless of individual builds."
 
-  infra-cost:
-    name: 💰 Infra Cost 🔴
-    runs-on: ubuntu-latest
-    if: always()
-    needs: ci-build
-    steps:
-      - name: Determine Infra Cost
-        run: echo "Determine Infra Cost."
+  # infra-cost:
+  #   name: 💰 Infra Cost 🔴
+  #   runs-on: ubuntu-latest
+  #   if: always()
+  #   needs: ci-build
+  #   steps:
+  #     - name: Determine Infra Cost
+  #       run: echo "Determine Infra Cost."
 
-  release-button:
-    name: 🚀 Create Release 🔴
-    runs-on: ubuntu-latest
-    if: always()
-    needs: infra-cost
-    steps:
-      - name: Create Release
-        run: echo "Create Release Button."
+  # release-button:
+  #   name: 🚀 Create Release 🔴
+  #   runs-on: ubuntu-latest
+  #   if: always()
+  #   needs: infra-cost
+  #   steps:
+  #     - name: Create Release
+  #       run: echo "Create Release Button."
