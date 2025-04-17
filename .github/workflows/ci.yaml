@@ -160,7 +160,7 @@ jobs:
           echo '`${{ steps.set-path.outputs.execution-path }}`' >> $GITHUB_STEP_SUMMARY
 
   cfn-lint:
-    if: ${{ fromJSON(needs.execution-path.outputs.execution-path).IaC == 'true' }}
+    if: ${{ toJSON(needs.execution-path.outputs.execution-path).IaC == 'true' }}
     name: 📋 CFN Lint 🟢
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
@@ -257,11 +257,11 @@ jobs:
     steps:
 
       - name: Build Lambda Package
-        if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'false' }}
+        if: ${{ toJSON(needs.execution-path.outputs.execution-path).lambda == 'false' }}
         run: echo "No changes in Lambda package, skipping build..."
 
       - name: Build and Upload Lambda Package
-        if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'true' }}
+        if: ${{ toJSON(needs.execution-path.outputs.execution-path).lambda == 'true' }}
         run: echo "Uploading Lambda package..."
 
   # build-lambda-layer:
