@@ -255,11 +255,11 @@ jobs:
       #     echo "${{ toJSON(needs.execution-path.outputs.execution-path) }}"
 
       - name: Build Lambda Package
-        if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'false' }}
+        # if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'false' }}
         run: echo "No changes in Lambda package, skipping build..."
 
       - name: Build and Upload Lambda Package
-        if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'true' }}
+        # if: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda == 'true' }}
         run: echo "Uploading Lambda package..."
 
   build-lambda-layer:
@@ -272,11 +272,11 @@ jobs:
       #     echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
     
       - name: Build Lambda Layer Package
-        if: ${{ fromJSON(needs.execution-path.outputs.execution-path)['python-layer'] == 'false' }}
+        # if: ${{ fromJSON(needs.execution-path.outputs.execution-path)['python-layer'] == 'false' }}
         run: echo "No changes in Lambda layer package, skipping build..."
 
       - name: Build and Upload Lambda Layer Package
-        if: ${{ fromJSON(needs.execution-path.outputs.execution-path)['python-layer'] == 'true' }}
+        # if: ${{ fromJSON(needs.execution-path.outputs.execution-path)['python-layer'] == 'true' }}
         run: echo "Build and Upload Lambda layer...."
 
   build-glue:
@@ -290,11 +290,11 @@ jobs:
       #     echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
 
       - name: Package Glue Script
-        if: ${{ fromJSON(needs.execution-path.outputs.execution-path).glue == 'false' }}
+        # if: ${{ fromJSON(needs.execution-path.outputs.execution-path).glue == 'false' }}
         run: echo "No changes found in Glue script, skipping build..."
 
       - name: Package and Upload Glue Script
-        if: ${{ fromJSON(needs.execution-path.outputs.execution-path).glue == 'true' }}
+        # if: ${{ fromJSON(needs.execution-path.outputs.execution-path).glue == 'true' }}
         run: echo "Uploading Glue script..."
 
   build-state-machine:
@@ -307,11 +307,11 @@ jobs:
       #     echo "${{ toJSON(fromJSON(needs.execution-path.outputs.execution-path)) }}"
 
       - name: Package State Machine
-        if: ${{ fromJSON(needs.execution-path.outputs.execution-path)['state-machine'] == 'false' }}
+        # if: ${{ fromJSON(needs.execution-path.outputs.execution-path)['state-machine'] == 'false' }}
         run: echo "No changes in State Machine, skipping build."
 
       - name: Upload State Machine ASL
-        if: ${{ fromJSON(needs.execution-path.outputs.execution-path)['state-machine'] == 'true' }}
+        # if: ${{ fromJSON(needs.execution-path.outputs.execution-path)['state-machine'] == 'true' }}
         run: echo "Uploading State Machine ASL..."
 
 
