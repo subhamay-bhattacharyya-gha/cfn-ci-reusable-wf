@@ -236,7 +236,7 @@ jobs:
         with:
           file: ${{ github.workspace }}/cfn/root-stack-template.yaml
           args: |
-            --org=https://app.snyk.io/org/bsubhamay/
+            --org=bsubhamay
             --severity-threshold=medium
             -d
 
