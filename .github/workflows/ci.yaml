@@ -187,7 +187,7 @@ jobs:
           fail-on-warnings: 'true'      # Optional, default is 'false'
 
   # cfn-validate:
-  #   if: ${{ fromJSON(needs.execution-path.outputs.execution-path).IaC == 'true' }}
+  #   if: ${{ fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
   #   name: ✔️ CFN Validate 🟢
   #   runs-on: ubuntu-latest
   #   environment: ${{ inputs.environment }}
@@ -219,7 +219,7 @@ jobs:
   #         echo "" >> $GITHUB_STEP_SUMMARY
 
   # checkov-scan:
-  #   if: ${{ fromJSON(needs.execution-path.outputs.execution-path).IaC == 'true' }}
+  #   if: ${{ fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
   #   name: 🧳 Checkov Scan 🟢
   #   runs-on: ubuntu-latest
   #   environment: ${{ inputs.environment }}
@@ -239,21 +239,21 @@ jobs:
   #     - name: 📋 Summarize and Print Checkov Scan Report with Snippets
   #       uses: subhamay-bhattacharyya-gha/checkov-report-action@main
 
-  # snyk-scan:
-  #   name: 🗞 Snyk IaC Scan 🟡
-  #   runs-on: ubuntu-latest
-  #   needs: [execution-path, detect-services, detect-changes]
-  #   steps:
-  #     - name: Checkout Code
-  #       uses: actions/checkout@v4
+  snyk-scan:
+    name: 🗞 Snyk IaC Scan 🟡
+    runs-on: ubuntu-latest
+    needs: [execution-path, detect-services, detect-changes]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-  # guard-rail:
-  #   name: 💂🏻‍♀️ Infra Guard Rail 🔴
-  #   runs-on: ubuntu-latest
-  #   needs: [execution-path, detect-services, detect-changes]
-  #   steps:
-  #     - name: Guardrail
-  #       run: echo "Guard Rail"
+  guard-rail:
+    name: 💂🏻‍♀️ Infra Guard Rail 🔴
+    runs-on: ubuntu-latest
+    needs: [execution-path, detect-services, detect-changes]
+    steps:
+      - name: Guardrail
+        run: echo "Guard Rail"
 
   # Update build-* jobs for safe fromJSON use
   build-lambda:
@@ -268,7 +268,7 @@ jobs:
 
   build-lambda-layer:
     name: 🛠️ Lambda Layer 🔴
-    if: ${{ toJSON(needs.execution-path.outputs.execution-path)['python-layer'] == true }}
+    if: ${{ toJSON(needs.execution-path.outputs.execution-path)['lambda-layer'] == true }}
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
@@ -306,38 +306,38 @@ jobs:
         run: echo "Uploading State Machine ASL..."
 
 
-  # ci-build:
-  #   name: 📦 CI Build 🔴
-  #   runs-on: ubuntu-latest
-  #   if: always()
-  #   needs:
-  #     - cfn-lint
-  #     - cfn-validate
-  #     - checkov-scan
-  #     - snyk-scan
-  #     - guard-rail
-  #     - build-lambda
-  #     - build-lambda-layer
-  #     - build-glue
-  #     - build-state-machine
-  #   steps:
-  #     - name: Finalize CI Build
-  #       run: echo "CI build completed regardless of individual builds."
+  ci-build:
+    name: 📦 CI Build 🔴
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - cfn-lint
+      # - cfn-validate
+      # - checkov-scan
+      - snyk-scan
+      - guard-rail
+      - build-lambda
+      - build-lambda-layer
+      - build-glue
+      - build-state-machine
+    steps:
+      - name: Finalize CI Build
+        run: echo "CI build completed regardless of individual builds."
 
-  # infra-cost:
-  #   name: 💰 Infra Cost 🔴
-  #   runs-on: ubuntu-latest
-  #   if: always()
-  #   needs: ci-build
-  #   steps:
-  #     - name: Determine Infra Cost
-  #       run: echo "Determine Infra Cost."
+  infra-cost:
+    name: 💰 Infra Cost 🔴
+    runs-on: ubuntu-latest
+    if: always()
+    needs: ci-build
+    steps:
+      - name: Determine Infra Cost
+        run: echo "Determine Infra Cost."
 
-  # release-button:
-  #   name: 🚀 Create Release 🔴
-  #   runs-on: ubuntu-latest
-  #   if: always()
-  #   needs: infra-cost
-  #   steps:
-  #     - name: Create Release
-  #       run: echo "Create Release Button."
+  release-button:
+    name: 🚀 Create Release 🔴
+    runs-on: ubuntu-latest
+    if: always()
+    needs: infra-cost
+    steps:
+      - name: Create Release
+        run: echo "Create Release Button."
