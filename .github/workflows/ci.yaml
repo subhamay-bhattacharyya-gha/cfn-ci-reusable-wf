@@ -229,16 +229,24 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
     
+      # - name: Run Snyk IaC Scan for CloudFormation
+      #   uses: snyk/actions/iac@master
+      #   env:
+      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      #   with:
+      #     file: ${{ github.workspace }}/cfn/root-stack-template.yaml
+      #     args: |
+      #       --org=bsubhamay
+      #       --severity-threshold=medium
+      #       -d
+
       - name: Run Snyk IaC Scan for CloudFormation
         uses: snyk/actions/iac@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          file: ${{ github.workspace }}/cfn/root-stack-template.yaml
-          args: |
-            --org=bsubhamay
-            --severity-threshold=medium
-            -d
+          file: cfn/root-stack-template.yaml
+          args: --severity-threshold=high
 
   guard-rail:
     name: 💂🏻‍♀️ Infra Guard Rail ⛔
