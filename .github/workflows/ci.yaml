@@ -221,13 +221,21 @@ jobs:
       - name: 📋 Summarize and Print Checkov Scan Report with Snippets
         uses: subhamay-bhattacharyya-gha/checkov-report-action@main
 
-  snyk-scan:
-    name: 🗞 Snyk IaC Scan ⛔
+  snyk-iac-scan:
+    name: 🗞 Snyk IaC Scan 🟡
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+    
+      - name: Run Snyk IaC Scan for CloudFormation
+        uses: snyk/actions/iac@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          file: ${{ github.workspace }}/cfn/root-stack-template.yaml
+          args: --severity-threshold=medium
 
   guard-rail:
     name: 💂🏻‍♀️ Infra Guard Rail ⛔
@@ -294,9 +302,9 @@ jobs:
     if: always()
     needs:
       - cfn-lint
-      # - cfn-validate
-      # - checkov-scan
-      - snyk-scan
+      - cfn-validate
+      - checkov-scan
+      - snyk-iac-scan
       - guard-rail
       - build-lambda
       - build-lambda-layer
