@@ -33,7 +33,7 @@ on:
 
 jobs:
   check-environments:
-    name: 🔎 Check Env 🟢
+    name: 🔎 Check Env
     runs-on: ubuntu-latest
     steps:
       - name: Check Available Environments
@@ -43,7 +43,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   check-branch-issue:
-    name: 🔎 Branch Issue 🟢
+    name: 🔎 Branch Issue
     runs-on: ubuntu-latest
     steps:
       - name: Verify branch issue
@@ -59,7 +59,7 @@ jobs:
           echo "Branch Issue: ${{ steps.branch-issue.outputs.issue-exists }}"
 
   detect-changes:
-    name: 🔎 Detect Changes 🟢
+    name: 🔎 Detect Changes
     runs-on: ubuntu-latest
     outputs:
       files-changed: ${{ steps.repo-changes.outputs.files-changed }}
@@ -72,7 +72,7 @@ jobs:
         uses: subhamay-bhattacharyya-gha/list-updated-files-action@main
 
   detect-services:
-    name: 🔎 Detect Services 🟢
+    name: 🔎 Detect Services
     runs-on: ubuntu-latest
     outputs:
       services-used: ${{ steps.scan.outputs.services-used }}
@@ -111,7 +111,7 @@ jobs:
           " >> $GITHUB_STEP_SUMMARY
 
   execution-path:
-    name: 🔎 Det. Exec Path 🟡
+    name: 🔎 Det. Exec Path
     runs-on: ubuntu-latest
     needs: [check-environments, check-branch-issue, detect-services, detect-changes]
     outputs:
@@ -152,31 +152,13 @@ jobs:
         if: steps.set-path.outputs.execution-path == ''
         run: echo "execution-path={}" >> $GITHUB_OUTPUT
 
-      # - name: Print Execution Path
-      #   run: |
-      #     echo "Execution Path JSON:"
-      #     echo '${{ steps.set-path.outputs.execution-path }}'
-          # echo "## Execution Path" >> $GITHUB_STEP_SUMMARY
-          # echo '`${{ steps.set-path.outputs.execution-path }}`' >> $GITHUB_STEP_SUMMARY
-
   cfn-lint:
-    name: 📋 CFN Lint 🟢
+    name: 📋 CFN Lint
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     if: ${{ fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
     steps:
-      # - name: Print Execution Path Debug Info
-      #   run: |
-      #     echo "🔍 Raw Execution Path JSON:"
-      #     echo '${{ toJSON(needs.execution-path.outputs.execution-path) }}' | jq .
-
-      #     echo "-------------------------------------------"
-      #     echo "✅ IaC: ${{ fromJSON(needs.execution-path.outputs.execution-path).IaC }}"
-      #     echo "✅ Lambda: ${{ fromJSON(needs.execution-path.outputs.execution-path).lambda }}"
-      #     echo "✅ Glue: ${{ fromJSON(needs.execution-path.outputs.execution-path).glue }}"
-      #     echo "✅ State Machine: ${{ fromJSON(needs.execution-path.outputs.execution-path).state-machine }}"
-      #     echo "✅ Python Layer: ${{ fromJSON(needs.execution-path.outputs.execution-path)['python-layer'] }}"
-      
+     
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -240,7 +222,7 @@ jobs:
   #       uses: subhamay-bhattacharyya-gha/checkov-report-action@main
 
   snyk-scan:
-    name: 🗞 Snyk IaC Scan 🟡
+    name: 🗞 Snyk IaC Scan ⛔
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
@@ -248,7 +230,7 @@ jobs:
         uses: actions/checkout@v4
 
   guard-rail:
-    name: 💂🏻‍♀️ Infra Guard Rail 🔴
+    name: 💂🏻‍♀️ Infra Guard Rail ⛔
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
     steps:
@@ -257,7 +239,7 @@ jobs:
 
   # Update build-* jobs for safe fromJSON use
   build-lambda:
-    name: 🛠️ Lambda Package 🔴
+    name: 🛠️ Lambda Package ⛔
     if: ${{ toJSON(needs.execution-path.outputs.execution-path).lambda == true }}
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
@@ -267,7 +249,7 @@ jobs:
         run: echo "Uploading Lambda package..."
 
   build-lambda-layer:
-    name: 🛠️ Lambda Layer 🔴
+    name: 🛠️ Lambda Layer ⛔
     if: ${{ toJSON(needs.execution-path.outputs.execution-path)['lambda-layer'] == true }}
     runs-on: ubuntu-latest
     needs: [execution-path, detect-services, detect-changes]
@@ -307,7 +289,7 @@ jobs:
 
 
   ci-build:
-    name: 📦 CI Build 🔴
+    name: 📦 CI Build ⛔
     runs-on: ubuntu-latest
     if: always()
     needs:
@@ -325,7 +307,7 @@ jobs:
         run: echo "CI build completed regardless of individual builds."
 
   infra-cost:
-    name: 💰 Infra Cost 🔴
+    name: 💰 Infra Cost ⛔
     runs-on: ubuntu-latest
     if: always()
     needs: ci-build
@@ -334,7 +316,7 @@ jobs:
         run: echo "Determine Infra Cost."
 
   release-button:
-    name: 🚀 Create Release 🔴
+    name: 🚀 Create Release ⛔
     runs-on: ubuntu-latest
     if: always()
     needs: infra-cost
