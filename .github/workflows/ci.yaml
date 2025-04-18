@@ -152,12 +152,12 @@ jobs:
         if: steps.set-path.outputs.execution-path == ''
         run: echo "execution-path={}" >> $GITHUB_OUTPUT
 
-      - name: Print Execution Path
-        run: |
-          echo "Execution Path JSON:"
-          echo '${{ steps.set-path.outputs.execution-path }}'
-          echo "## Execution Path" >> $GITHUB_STEP_SUMMARY
-          echo '`${{ steps.set-path.outputs.execution-path }}`' >> $GITHUB_STEP_SUMMARY
+      # - name: Print Execution Path
+      #   run: |
+      #     echo "Execution Path JSON:"
+      #     echo '${{ steps.set-path.outputs.execution-path }}'
+          # echo "## Execution Path" >> $GITHUB_STEP_SUMMARY
+          # echo '`${{ steps.set-path.outputs.execution-path }}`' >> $GITHUB_STEP_SUMMARY
 
   cfn-lint:
     name: 📋 CFN Lint 🟢
