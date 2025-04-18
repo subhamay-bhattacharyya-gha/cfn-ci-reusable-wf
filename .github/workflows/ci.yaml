@@ -235,7 +235,10 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           file: ${{ github.workspace }}/cfn/root-stack-template.yaml
-          args: --severity-threshold=medium
+          args: |
+            --org=https://app.snyk.io/org/bsubhamay/
+            --severity-threshold=medium
+            -d
 
   guard-rail:
     name: 💂🏻‍♀️ Infra Guard Rail ⛔
