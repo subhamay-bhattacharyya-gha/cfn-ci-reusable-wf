@@ -134,6 +134,7 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
       - name: Determine services used and repo changes
         id: prepare-inputs
         run: |
@@ -144,6 +145,7 @@ jobs:
           fi
           echo "${{ needs.detect-changes.outputs.json-output }}" | base64 -d > repo-changes.json
           sed -E 's/([{,])([^:{]+):/\1"\2":/g' <<< "${{ needs.detect-services.outputs.services-used }}" > services-used.json
+
       - name: Debug parsed input files
         run: |
           echo "Repo Changes JSON"
@@ -151,6 +153,7 @@ jobs:
           echo "---------------------------"
           echo "Services Used JSON"
           cat services-used.json
+          
       - name: Set Execution Path
         id: set-path
         uses: subhamay-bhattacharyya-gha/exec-path-action@main
@@ -233,12 +236,31 @@ jobs:
           fi
           
           echo "Linting template: $TEMPLATE_PATH"
-          cfn-lint "$TEMPLATE_PATH" --format compact
           
-          if [ $? -eq 0 ]; then
+          # Run cfn-lint and capture output
+          LINT_OUTPUT=$(cfn-lint "$TEMPLATE_PATH" --format parseable 2>&1)
+          LINT_EXIT_CODE=$?
+          
+          # Add cfn-lint results to GitHub Step Summary
+          echo "## 📋 CloudFormation Lint Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Template:** \`$TEMPLATE_PATH\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $LINT_EXIT_CODE -eq 0 ]; then
+            echo "### ✅ Linting Passed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No issues found in the CloudFormation template." >> $GITHUB_STEP_SUMMARY
             echo "✅ Template $TEMPLATE_PATH passed linting"
           else
+            echo "### ❌ Linting Issues Found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "$LINT_OUTPUT" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "❌ Template $TEMPLATE_PATH failed linting"
+            echo "Lint output:"
+            echo "$LINT_OUTPUT"
             exit 1
           fi
           
