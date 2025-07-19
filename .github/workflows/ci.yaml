@@ -12,12 +12,12 @@ on:
         description: "Environment to deploy to (e.g., ci, devl, test, prod)."
         required: true
         type: string
-      cloudformation-dir:
+      cfn-template-dir:
         description: "Directory containing CloudFormation template files."
         required: true
         type: string
         default: "cf"
-      cf-params-file:
+      cfn-params-file:
         description: "CloudFormation parameters file to use."
         required: false
         type: string
@@ -184,7 +184,7 @@ jobs:
         run: |
           echo "🔍 Validating CloudFormation template: ${{ inputs.cfn-template-file }}"
           
-          TEMPLATE_PATH="${{ inputs.cloudformation-dir }}/${{ inputs.cfn-template-file }}"
+          TEMPLATE_PATH="${{ inputs.cfn-template-dir }}/${{ inputs.cfn-template-file }}"
           
           if [ ! -f "$TEMPLATE_PATH" ]; then
             echo "❌ Template file not found: $TEMPLATE_PATH"
@@ -225,7 +225,7 @@ jobs:
         run: |
           echo "🔍 Running cfn-lint on CloudFormation template: ${{ inputs.cfn-template-file }}"
           
-          TEMPLATE_PATH="${{ inputs.cloudformation-dir }}/${{ inputs.cfn-template-file }}"
+          TEMPLATE_PATH="${{ inputs.cfn-template-dir }}/${{ inputs.cfn-template-file }}"
           
           if [ ! -f "$TEMPLATE_PATH" ]; then
             echo "❌ Template file not found: $TEMPLATE_PATH"
@@ -263,7 +263,7 @@ jobs:
     #     uses: subhamay-bhattacharyya-gha/checkov-scan-action@main
     #     id: checkov-scan
     #     with:
-    #       iac-dir: ${{ inputs.cloudformation-dir }}
+    #       iac-dir: ${{ inputs.cfn-template-dir }}
     #       iac-framework: cloudformation
     #       soft-fail: true
     #   - name: Confirm SARIF file type
@@ -330,7 +330,7 @@ jobs:
     #   - name: Call Yor Reusable Action
     #     uses: subhamay-bhattacharyya-gha/cf-yor-action@main
     #     with:
-    #       cloudformation-dir: ${{ inputs.cloudformation-dir }}
+    #       cfn-template-dir: ${{ inputs.cfn-template-dir }}
     #       github-token: ${{ secrets.GITHUB_TOKEN }}
 
 #   cloudformation-plan:
@@ -349,8 +349,8 @@ jobs:
 #         id: plan
 #         uses: subhamay-bhattacharyya-gha/cf-plan-action@main
 #         with:
-#           cloudformation-dir: ${{ inputs.cloudformation-dir }}
-#           cf-params-file: ${{ inputs.cf-params-file }}
+#           cfn-template-dir: ${{ inputs.cfn-template-dir }}
+#           cfn-params-file: ${{ inputs.cfn-params-file }}
 #           s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
 #           s3-region: ${{ vars.AWS_REGION }}
 #           ci-pipeline: ${{ inputs.ci-pipeline }}
@@ -374,7 +374,7 @@ jobs:
     #     id: infra-cost
     #     uses: subhamay-bhattacharyya-gha/infracost-action@main
     #     with:
-    #       cloudformation-dir: ${{ inputs.cloudformation-dir }}
+    #       cfn-template-dir: ${{ inputs.cfn-template-dir }}
     #       ci-pipeline: ${{ inputs.ci-pipeline }}
     #       s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
     #       s3-region: ${{ vars.AWS_REGION }}
@@ -401,7 +401,7 @@ jobs:
     #     uses: subhamay-bhattacharyya-gha/cf-apply-action@main
     #     id: apply
     #     with:
-    #       cloudformation-dir: ${{ inputs.cloudformation-dir }}
+    #       cfn-template-dir: ${{ inputs.cfn-template-dir }}
     #       s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
     #       s3-region: ${{ vars.AWS_REGION }}
     #       ci-pipeline: ${{ inputs.ci-pipeline }}
@@ -425,7 +425,7 @@ jobs:
     #     uses: subhamay-bhattacharyya-gha/cf-destroy-action@main
     #     id: destroy
     #     with:
-    #       cloudformation-dir: ${{ inputs.cloudformation-dir }}
+    #       cfn-template-dir: ${{ inputs.cfn-template-dir }}
     #       s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
     #       s3-region: ${{ vars.AWS_REGION }}
     #       ci-pipeline: ${{ inputs.ci-pipeline }}
