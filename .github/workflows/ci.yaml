@@ -237,9 +237,11 @@ jobs:
           
           echo "Linting template: $TEMPLATE_PATH"
           
-          # Run cfn-lint and capture output
+          # Run cfn-lint and capture output (don't exit on failure yet)
+          set +e  # Disable exit on error temporarily
           LINT_OUTPUT=$(cfn-lint "$TEMPLATE_PATH" --format parseable 2>&1)
           LINT_EXIT_CODE=$?
+          set -e  # Re-enable exit on error
           
           # Add cfn-lint results to GitHub Step Summary
           echo "## 📋 CloudFormation Lint Results" >> $GITHUB_STEP_SUMMARY
@@ -253,15 +255,27 @@ jobs:
             echo "No issues found in the CloudFormation template." >> $GITHUB_STEP_SUMMARY
             echo "✅ Template $TEMPLATE_PATH passed linting"
           else
-            echo "### ❌ Linting Issues Found" >> $GITHUB_STEP_SUMMARY
+            echo "### ❌ Linting Issues Found (Exit Code: $LINT_EXIT_CODE)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            echo "$LINT_OUTPUT" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            echo "❌ Template $TEMPLATE_PATH failed linting"
+            if [ -n "$LINT_OUTPUT" ]; then
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              echo "$LINT_OUTPUT" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "No detailed output available from cfn-lint." >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**cfn-lint Exit Codes:**" >> $GITHUB_STEP_SUMMARY
+            echo "- 0: No issues" >> $GITHUB_STEP_SUMMARY
+            echo "- 2: Warnings found" >> $GITHUB_STEP_SUMMARY
+            echo "- 4: Errors found" >> $GITHUB_STEP_SUMMARY
+            echo "- 8: Invalid CLI arguments" >> $GITHUB_STEP_SUMMARY
+            echo "- 16: Fatal errors" >> $GITHUB_STEP_SUMMARY
+            
+            echo "❌ Template $TEMPLATE_PATH failed linting (exit code: $LINT_EXIT_CODE)"
             echo "Lint output:"
             echo "$LINT_OUTPUT"
-            exit 1
+            exit $LINT_EXIT_CODE
           fi
           
           echo "✅ CloudFormation linting completed successfully"
