@@ -166,24 +166,32 @@ jobs:
     environment: ${{ inputs.environment }}
     needs: [execution-path, detect-services, detect-changes]
     steps:
-        - name: CloudFormation Validate
-          run: |
-            echo "CloudFormation Validate"
-    #   - name: Configure AWS Credentials
-    #     uses: aws-actions/configure-aws-credentials@v4
-    #     with:
-    #       role-to-assume: ${{ secrets.aws-role-arn }}
-    #       aws-region: ${{ vars.AWS_REGION }}
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.aws-role-arn }}
+          aws-region: ${{ vars.AWS_REGION }}
           
-    #   - name: CloudFormation Validation and Formatting Checks
-    #     id: validate
-    #     uses: subhamay-bhattacharyya-gha/cf-validate-action@main
-    #     with:
-    #       cloudformation-dir: ${{ inputs.cloudformation-dir }}
-    #       s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
-    #       s3-region: ${{ vars.AWS_REGION }}
-    #       ci-pipeline: "true"
-    #       soft-fail: "true"
+      - name: Validate CloudFormation Templates
+        run: |
+          echo "🔍 Validating CloudFormation templates in ${{ inputs.cloudformation-dir }}"
+          
+          # Find all CloudFormation template files
+          find ${{ inputs.cloudformation-dir }} -name "*.yaml" -o -name "*.yml" -o -name "*.json" | while read template; do
+            echo "Validating template: $template"
+            aws cloudformation validate-template --template-body file://$template
+            if [ $? -eq 0 ]; then
+              echo "✅ Template $template is valid"
+            else
+              echo "❌ Template $template validation failed"
+              exit 1
+            fi
+          done
+          
+          echo "✅ All CloudFormation templates validated successfully"
 
   cloudformation-lint:
     name: 📋 CloudFormation Lint
@@ -191,15 +199,23 @@ jobs:
     needs: [execution-path, detect-services, detect-changes]
     if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
     steps:
-    #   - name: Run CFN-Lint
-    #     uses: subhamay-bhattacharyya-gha/cf-lint-action@main
-    #     with:
-    #       cfn-lint-ver: ${{ vars.CFN_LINT_VER }}
-    #       use-cache: "true"
-    #       cfn-lint-format: "compact"
-        - name: CloudFormation Lint
-          run: |
-                echo "CloudFormation Lint"
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+          
+      - name: Install cfn-lint
+        run: |
+          pip install cfn-lint
+          
+      - name: Run CloudFormation Lint
+        run: |
+          echo "🔍 Running cfn-lint on CloudFormation templates"
+          cfn-lint ${{ inputs.cloudformation-dir }}/**/*.yaml ${{ inputs.cloudformation-dir }}/**/*.yml --format compact
+          echo "✅ CloudFormation linting completed"
 
   checkov-scan:
     if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
