@@ -239,7 +239,17 @@ jobs:
           
           # Run cfn-lint and capture output (don't exit on failure yet)
           set +e  # Disable exit on error temporarily
-          LINT_OUTPUT=$(cfn-lint "$TEMPLATE_PATH" --format parseable 2>&1)
+          
+          # Check if parameters file exists and add it to cfn-lint command
+          PARAMS_PATH="${{ inputs.cfn-template-dir }}/${{ inputs.cfn-params-file }}"
+          if [ -f "$PARAMS_PATH" ]; then
+            echo "Using parameters file: $PARAMS_PATH"
+            LINT_OUTPUT=$(cfn-lint "$TEMPLATE_PATH" --format parseable --parameters-file "$PARAMS_PATH" 2>&1)
+          else
+            echo "Parameters file not found: $PARAMS_PATH - running cfn-lint without parameters"
+            LINT_OUTPUT=$(cfn-lint "$TEMPLATE_PATH" --format parseable 2>&1)
+          fi
+          
           LINT_EXIT_CODE=$?
           set -e  # Re-enable exit on error
           
