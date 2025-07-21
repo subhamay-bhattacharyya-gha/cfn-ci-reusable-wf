@@ -198,7 +198,7 @@ jobs:
     name: ✔️ CloudFormation Validate
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    needs: [execution-path, check-environments, check-branch-issue, detect-services, detect-changes]
+    needs: [execution-path]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -237,7 +237,7 @@ jobs:
   cloudformation-lint:
     name: 📋 CloudFormation Lint
     runs-on: ubuntu-latest
-    needs: [execution-path, check-environments, check-branch-issue, detect-services, detect-changes]
+    needs: [execution-path]
     if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
     steps:
       - name: Checkout Code
