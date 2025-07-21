@@ -17,8 +17,8 @@ on:
         required: true
         type: string
         default: "cf"
-      ci-pipeline:
-        description: "Indicates if this is a CI pipeline run."
+      ci-build:
+        description: "Indicates if this is a CI build run."
         required: false
         type: boolean
         default: true
@@ -247,9 +247,19 @@ jobs:
         run: |
           echo "🔍 cfn-stack-params-action Output:"
           echo "=================================="
+          echo "All step outputs:"
+          echo "${{ toJSON(steps.prepare-params.outputs) }}"
+          echo "=================================="
+          echo "Individual outputs (current references):"
           echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
           echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
-          echo "Template Path: ${{ steps.prepare-params.outputs.ci-build-id }}"
+          echo "CI Build Id: ${{ steps.prepare-params.outputs.ci-build-id }}"
+          echo "=================================="
+          echo "Alternative output names to try:"
+          echo "stackName: ${{ steps.prepare-params.outputs.stackName }}"
+          echo "stack_name: ${{ steps.prepare-params.outputs.stack_name }}"
+          echo "ciBuildId: ${{ steps.prepare-params.outputs.ciBuildId }}"
+          # echo "ci_build_id: ${{ steps.prepare-params.outputs.ci_build_id }}"
           echo "=================================="
           
           # Create params directory if it doesn't exist
@@ -257,11 +267,18 @@ jobs:
           mkdir -p "$PARAMS_DIR"
           
           # Create cfn-parameters.json file with the prepared parameters
-          echo '${{ steps.prepare-params.outputs.parameters }}' > "$PARAMS_DIR/cfn-parameters.json"
+          PARAMETERS_OUTPUT='${{ steps.prepare-params.outputs.parameters }}'
           
-          echo "✅ Created cfn-parameters.json at: $PARAMS_DIR/cfn-parameters.json"
-          echo "📄 File contents:"
-          cat "$PARAMS_DIR/cfn-parameters.json"
+          if [ -n "$PARAMETERS_OUTPUT" ] && [ "$PARAMETERS_OUTPUT" != "null" ] && [ "$PARAMETERS_OUTPUT" != "" ]; then
+            echo "$PARAMETERS_OUTPUT" > "$PARAMS_DIR/cfn-parameters.json"
+            echo "✅ Created cfn-parameters.json at: $PARAMS_DIR/cfn-parameters.json"
+            echo "📄 File contents:"
+            cat "$PARAMS_DIR/cfn-parameters.json"
+          else
+            echo "⚠️ Parameters output is empty or null, creating empty JSON object"
+            echo '{}' > "$PARAMS_DIR/cfn-parameters.json"
+            echo "📄 Created empty parameters file at: $PARAMS_DIR/cfn-parameters.json"
+          fi
 
       - name: Run CloudFormation Lint
         run: |
@@ -469,7 +486,7 @@ jobs:
 #           cfn-params-file: parameters.json
 #           s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
 #           s3-region: ${{ vars.AWS_REGION }}
-#           ci-pipeline: ${{ inputs.ci-pipeline }}
+#           ci-build: ${{ inputs.ci-build }}
 
   infra-cost:
     if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
@@ -491,7 +508,7 @@ jobs:
     #     uses: subhamay-bhattacharyya-gha/infracost-action@main
     #     with:
     #       cfn-template-dir: ${{ inputs.cfn-template-dir }}
-    #       ci-pipeline: ${{ inputs.ci-pipeline }}
+    #       ci-build: ${{ inputs.ci-build }}
     #       s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
     #       s3-region: ${{ vars.AWS_REGION }}
     #       infracost-api-key: ${{ secrets.infracost-api-key }}
@@ -520,7 +537,7 @@ jobs:
     #       cfn-template-dir: ${{ inputs.cfn-template-dir }}
     #       s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
     #       s3-region: ${{ vars.AWS_REGION }}
-    #       ci-pipeline: ${{ inputs.ci-pipeline }}
+    #       ci-build: ${{ inputs.ci-build }}
 
   cloudformation-delete:
     if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
@@ -544,7 +561,7 @@ jobs:
     #       cfn-template-dir: ${{ inputs.cfn-template-dir }}
     #       s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
     #       s3-region: ${{ vars.AWS_REGION }}
-    #       ci-pipeline: ${{ inputs.ci-pipeline }}
+    #       ci-build: ${{ inputs.ci-build }}
 
   create-pull-request:
     name: 🚀 Create Pull Request
