@@ -393,7 +393,7 @@ jobs:
     name: 🧳 Checkov Scan
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    needs: [execution-path, check-environments, check-branch-issue, detect-services, detect-changes]
+    needs: [execution-path]
     steps:
         - name: Checkov Scan
           run: |
