@@ -52,8 +52,8 @@ jobs:
         uses: subhamay-bhattacharyya-gha/check-environments-action@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          org-short-name: ${{ vars.ORG_SHORT_NAME }}
-          region: ${{ vars.AWS_REGION }}
+          org-short-name: ${{ vars.ORG_SHORT_NAME != '' && vars.ORG_SHORT_NAME || 'org' }}
+          region: ${{ vars.AWS_REGION != '' && vars.AWS_REGION || 'us-east-1' }}
 
   check-branch-issue:
     name: 🔎 Check Branch
@@ -92,13 +92,16 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        
       - name: Scan AWS Services
         id: scan
         uses: subhamay-bhattacharyya-gha/scan-aws-services-action@main
+
       - name: Save Detected Services to Environment Variable
         run: |
           echo "Detected Services: ${{ steps.scan.outputs.services-used }}"
           echo 'SERVICES_USED=${{ steps.scan.outputs.services-used }}' >> $GITHUB_ENV
+
       - name: Print AWS Service Detection Table
         run: |
           echo "## AWS Services Detected" >> $GITHUB_STEP_SUMMARY
