@@ -17,16 +17,6 @@ on:
         required: true
         type: string
         default: "cf"
-      cfn-params-file:
-        description: "CloudFormation parameters file to use."
-        required: false
-        type: string
-        default: "parameters.json"
-      cfn-template-file:
-        description: "CloudFormation template file to validate."
-        required: false
-        type: string
-        default: "template.yaml"
       ci-pipeline:
         description: "Indicates if this is a CI pipeline run."
         required: false
@@ -173,6 +163,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: [execution-path, detect-services, detect-changes]
+    outputs:
+      template-path: ${{ steps.validate-template.outputs.template-path }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -184,10 +176,26 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
           
       - name: Validate CloudFormation Template
+        id: validate-template
         run: |
-          echo "🔍 Validating CloudFormation template: ${{ inputs.cfn-template-file }}"
+          # Read template name from cloudformation.json
+          CONFIG_FILE="${{ github.workspace }}/${{ inputs.cfn-directory }}/cloudformation.json"
           
-          TEMPLATE_PATH="${{ inputs.cfn-directory }}/${{ inputs.cfn-template-file }}"
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "❌ Configuration file not found: $CONFIG_FILE"
+            exit 1
+          fi
+          
+          TEMPLATE_NAME=$(jq -r '.template' "$CONFIG_FILE")
+          
+          if [ "$TEMPLATE_NAME" == "null" ] || [ -z "$TEMPLATE_NAME" ]; then
+            echo "❌ Template name not found in configuration file"
+            exit 1
+          fi
+          
+          echo "🔍 Validating CloudFormation template: $TEMPLATE_NAME"
+          
+          TEMPLATE_PATH="${{ inputs.cfn-directory }}/$TEMPLATE_NAME"
           
           if [ ! -f "$TEMPLATE_PATH" ]; then
             echo "❌ Template file not found: $TEMPLATE_PATH"
@@ -205,11 +213,14 @@ jobs:
           fi
           
           echo "✅ CloudFormation template validated successfully"
+          
+          # Set template path as step output
+          echo "template-path=$TEMPLATE_PATH" >> $GITHUB_OUTPUT
 
   cloudformation-lint:
     name: 📋 CloudFormation Lint
     runs-on: ubuntu-latest
-    needs: [execution-path, detect-services, detect-changes]
+    needs: [execution-path, detect-services, detect-changes, cloudformation-validate]
     if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
     steps:
       - name: Checkout Code
@@ -254,9 +265,11 @@ jobs:
 
       - name: Run CloudFormation Lint
         run: |
-          echo "🔍 Running cfn-lint on CloudFormation template: ${{ inputs.cfn-template-file }}"
+          # Use template path from validation job output
+          TEMPLATE_PATH="${{ needs.cloudformation-validate.outputs.template-path }}"
+          TEMPLATE_NAME=$(basename "$TEMPLATE_PATH")
           
-          TEMPLATE_PATH="${{ inputs.cfn-directory }}/${{ inputs.cfn-template-file }}"
+          echo "🔍 Running cfn-lint on CloudFormation template: $TEMPLATE_NAME"
           
           if [ ! -f "$TEMPLATE_PATH" ]; then
             echo "❌ Template file not found: $TEMPLATE_PATH"
@@ -323,7 +336,7 @@ jobs:
         run: |
           echo "## 📋 CloudFormation Parameters" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Parameters File:** \`${{ inputs.cfn-directory }}/${{ inputs.cfn-params-file }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Parameters File:** \`${{ inputs.cfn-directory }}/parameters.json\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ -n "${{ steps.prepare-params.outputs.parameters }}" ]; then
@@ -450,7 +463,7 @@ jobs:
 #         uses: subhamay-bhattacharyya-gha/cf-plan-action@main
 #         with:
 #           cfn-template-dir: ${{ inputs.cfn-template-dir }}
-#           cfn-params-file: ${{ inputs.cfn-params-file }}
+#           cfn-params-file: parameters.json
 #           s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
 #           s3-region: ${{ vars.AWS_REGION }}
 #           ci-pipeline: ${{ inputs.ci-pipeline }}
