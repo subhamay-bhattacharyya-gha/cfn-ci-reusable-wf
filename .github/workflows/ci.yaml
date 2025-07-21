@@ -459,7 +459,7 @@ jobs:
 
   yor-resource-tagging:
     name: 📋 Apply Git Metadata Tags using YOR
-    if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
+    if: ${{ needs.cloudformation-lint.result == 'success' && needs.cloudformation-validate == 'success' && needs.checkov-scan == 'success' }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: [cloudformation-lint, cloudformation-validate, checkov-scan]
@@ -495,48 +495,23 @@ jobs:
 #           s3-region: ${{ vars.AWS_REGION }}
 #           ci-build: ${{ inputs.ci-build }}
 
-  infra-cost:
-    if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
-    name: 💰 Infra Cost
+  cloudformation-create:
+    if: ${{ needs.yor-resource-tagging.result == 'success' }}
+    name: 🚧 CloudFormation Create Stack
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: [yor-resource-tagging]
     steps:
-        - name: Infra cost
-          run: |
-            echo "Infra Cost"
-    #   - name: Configure AWS Credentials
-    #     uses: aws-actions/configure-aws-credentials@v4
-    #     with:
-    #       role-to-assume: ${{ secrets.aws-role-arn }}
-    #       aws-region: ${{ vars.AWS_REGION }}
-    #   - name: Infra Cost
-    #     id: infra-cost
-    #     uses: subhamay-bhattacharyya-gha/infracost-action@main
-    #     with:
-    #       cfn-template-dir: ${{ inputs.cfn-template-dir }}
-    #       ci-build: ${{ inputs.ci-build }}
-    #       s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
-    #       s3-region: ${{ vars.AWS_REGION }}
-    #       infracost-api-key: ${{ secrets.infracost-api-key }}
-    #       gist-id: ${{ secrets.infracost-gist-id }}
-    #       environment: ${{ inputs.environment }}
-
-  cloudformation-create:
-    if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
-    name: 🚧 CloudFormation Create Stack
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    needs: [infra-cost]
-    steps:
         - name: CloudFormation Create Stack
           run: |
             echo "CloudFormation Create Stack"
-    #   - name: Configure AWS Credentials
-    #     uses: aws-actions/configure-aws-credentials@v4
-    #     with:
-    #       role-to-assume: ${{ secrets.aws-role-arn }}
-    #       aws-region: ${{ vars.AWS_REGION }}
+
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: ${{ secrets.aws-role-arn }}
+            aws-region: ${{ vars.AWS_REGION }}
+            
     #   - name: CloudFormation Apply
     #     uses: subhamay-bhattacharyya-gha/cf-apply-action@main
     #     id: apply
@@ -547,7 +522,7 @@ jobs:
     #       ci-build: ${{ inputs.ci-build }}
 
   cloudformation-delete:
-    if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
+    if: ${{ needs.cloudformation-create.result == 'success' }}
     name: ✂️ CloudFormation Destroy
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
@@ -556,11 +531,13 @@ jobs:
         - name: CloudFormation Delete Stack
           run: |
             echo "CloudFormation Delete Stack"
-    #   - name: Configure AWS Credentials
-    #     uses: aws-actions/configure-aws-credentials@v4
-    #     with:
-    #       role-to-assume: ${{ secrets.aws-role-arn }}
-    #       aws-region: ${{ vars.AWS_REGION }}
+
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: ${{ secrets.aws-role-arn }}
+            aws-region: ${{ vars.AWS_REGION }}
+
     #   - name: CloudFormation Destroy
     #     uses: subhamay-bhattacharyya-gha/cf-destroy-action@main
     #     id: destroy
@@ -578,7 +555,6 @@ jobs:
       - cloudformation-validate
       - cloudformation-create
       - cloudformation-delete
-      - infra-cost
       - yor-resource-tagging
       - checkov-scan
       - build-lambda
@@ -592,7 +568,6 @@ jobs:
         needs.cloudformation-validate.result != 'failure' &&
         needs.cloudformation-create.result != 'failure' &&
         needs.cloudformation-delete.result != 'failure' &&
-        needs.infra-cost.result != 'failure' &&
         needs.yor-resource-tagging.result != 'failure' &&
         needs.checkov-scan.result != 'failure' &&
         needs.build-lambda.result != 'failure' &&
