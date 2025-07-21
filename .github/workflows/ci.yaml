@@ -12,7 +12,7 @@ on:
         description: "Environment to deploy to (e.g., ci, devl, test, prod)."
         required: true
         type: string
-      cfn-template-dir:
+      cfn-directory:
         description: "Directory containing CloudFormation template files."
         required: true
         type: string
@@ -187,7 +187,7 @@ jobs:
         run: |
           echo "🔍 Validating CloudFormation template: ${{ inputs.cfn-template-file }}"
           
-          TEMPLATE_PATH="${{ inputs.cfn-template-dir }}/${{ inputs.cfn-template-file }}"
+          TEMPLATE_PATH="${{ inputs.cfn-directory }}/${{ inputs.cfn-template-file }}"
           
           if [ ! -f "$TEMPLATE_PATH" ]; then
             echo "❌ Template file not found: $TEMPLATE_PATH"
@@ -224,11 +224,28 @@ jobs:
         run: |
           pip install cfn-lint
           
+      - name: Prepare CloudFormation Parameters
+        id: prepare-params
+        uses: subhamay-bhattacharyya-gha/cfn-stack-params-action@feature/GHA-0001-initial-release
+        with:
+          cfn-directory: ${{ inputs.cfn-directory }}
+          ci-build: 'true'
+          environment: 'ci'
+          
+      - name: Print cfn-stack-params-action Output
+        run: |
+          echo "🔍 cfn-stack-params-action Output:"
+          echo "=================================="
+          echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
+          echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
+          echo "Template Path: ${{ steps.prepare-params.outputs.ci-build-id }}"
+          echo "=================================="
+
       - name: Run CloudFormation Lint
         run: |
           echo "🔍 Running cfn-lint on CloudFormation template: ${{ inputs.cfn-template-file }}"
           
-          TEMPLATE_PATH="${{ inputs.cfn-template-dir }}/${{ inputs.cfn-template-file }}"
+          TEMPLATE_PATH="${{ inputs.cfn-directory }}/${{ inputs.cfn-template-file }}"
           
           if [ ! -f "$TEMPLATE_PATH" ]; then
             echo "❌ Template file not found: $TEMPLATE_PATH"
@@ -241,7 +258,7 @@ jobs:
           set +e  # Disable exit on error temporarily
           
           # Check if parameters file exists and add it to cfn-lint command
-          PARAMS_PATH="${{ inputs.cfn-template-dir }}/${{ inputs.cfn-params-file }}"
+          PARAMS_PATH="${{ inputs.cfn-directory }}/${{ inputs.cfn-params-file }}"
           if [ -f "$PARAMS_PATH" ]; then
             echo "Using parameters file: $PARAMS_PATH"
             LINT_OUTPUT=$(cfn-lint "$TEMPLATE_PATH" --format parseable --parameters-file "$PARAMS_PATH" 2>&1)
@@ -289,6 +306,32 @@ jobs:
           fi
           
           echo "✅ CloudFormation linting completed successfully"
+          
+          
+      - name: Display Prepared Parameters
+        run: |
+          echo "## 📋 CloudFormation Parameters" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Parameters File:** \`${{ inputs.cfn-directory }}/${{ inputs.cfn-params-file }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -n "${{ steps.prepare-params.outputs.parameters }}" ]; then
+            echo "### Prepared Parameters:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.prepare-params.outputs.parameters }}" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            
+            echo "✅ CloudFormation parameters prepared successfully"
+            echo "Prepared parameters:"
+            echo "${{ steps.prepare-params.outputs.parameters }}"
+          else
+            echo "### ⚠️ No Parameters Found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No parameters were found or prepared from the parameters file." >> $GITHUB_STEP_SUMMARY
+            
+            echo "⚠️ No parameters found in the parameters file"
+          fi
 
   checkov-scan:
     if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
@@ -309,7 +352,7 @@ jobs:
     #     uses: subhamay-bhattacharyya-gha/checkov-scan-action@main
     #     id: checkov-scan
     #     with:
-    #       iac-dir: ${{ inputs.cfn-template-dir }}
+    #       iac-dir: ${{ inputs.cfn-directory }}
     #       iac-framework: cloudformation
     #       soft-fail: true
     #   - name: Confirm SARIF file type
@@ -376,7 +419,7 @@ jobs:
     #   - name: Call Yor Reusable Action
     #     uses: subhamay-bhattacharyya-gha/cf-yor-action@main
     #     with:
-    #       cfn-template-dir: ${{ inputs.cfn-template-dir }}
+    #       cfn-directory: ${{ inputs.cfn-directory }}
     #       github-token: ${{ secrets.GITHUB_TOKEN }}
 
 #   cloudformation-plan:
