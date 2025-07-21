@@ -198,7 +198,7 @@ jobs:
     name: ✔️ CloudFormation Validate
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    needs: [execution-path, detect-services, detect-changes, check-environments]
+    needs: [execution-path, check-environments, check-branch-issue, detect-services, detect-changes]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -237,7 +237,7 @@ jobs:
   cloudformation-lint:
     name: 📋 CloudFormation Lint
     runs-on: ubuntu-latest
-    needs: [execution-path, detect-services, detect-changes, check-environments]
+    needs: [execution-path, check-environments, check-branch-issue, detect-services, detect-changes]
     if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
     steps:
       - name: Checkout Code
@@ -316,10 +316,10 @@ jobs:
           PARAMS_PATH="${{ github.workspace }}/${{ inputs.cfn-directory }}/params/cfn-parameters.json"
           if [ -f "$PARAMS_PATH" ]; then
             echo "Using parameters file: $PARAMS_PATH"
-            LINT_OUTPUT=$(cfn-lint "$TEMPLATE_PATH" --format parseable --parameters-file "$PARAMS_PATH" 2>&1)
+            LINT_OUTPUT=$(cfn-lint "$FULL_TEMPLATE_PATH" --format parseable --parameters-file "$PARAMS_PATH" 2>&1)
           else
             echo "Parameters file not found: $PARAMS_PATH - running cfn-lint without parameters"
-            LINT_OUTPUT=$(cfn-lint "$TEMPLATE_PATH" --format parseable 2>&1)
+            LINT_OUTPUT=$(cfn-lint "$FULL_TEMPLATE_PATH" --format parseable 2>&1)
           fi
           
           LINT_EXIT_CODE=$?
@@ -393,7 +393,7 @@ jobs:
     name: 🧳 Checkov Scan
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    needs: [execution-path, detect-services, detect-changes]
+    needs: [execution-path, check-environments, check-branch-issue, detect-services, detect-changes]
     steps:
         - name: Checkov Scan
           run: |
