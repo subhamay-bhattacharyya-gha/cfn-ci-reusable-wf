@@ -16,7 +16,7 @@ on:
         description: "Directory containing CloudFormation template files."
         required: true
         type: string
-        default: "cf"
+        default: 'cfn'
       ci-build:
         description: "Indicates if this is a CI build run."
         required: false
@@ -32,6 +32,10 @@ on:
       infracost-gist-id:
         description: "Gist ID for Infracost output."
         required: true
+    outputs:
+      template-path:
+        description: "Path to the CloudFormation template file"
+        value: ${{ jobs.cloudformation-validate.outputs.template-path }}
 
 permissions:
   id-token: write
@@ -240,7 +244,7 @@ jobs:
         uses: subhamay-bhattacharyya-gha/cfn-stack-params-action@feature/GHA-0001-initial-release
         with:
           cfn-directory: ${{ inputs.cfn-directory }}
-          ci-build: 'true'
+          ci-build: ${{ inputs.ci-build }}
           environment: 'ci'
           
       - name: Print cfn-stack-params-action Output
@@ -254,12 +258,6 @@ jobs:
           echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
           echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
           echo "CI Build Id: ${{ steps.prepare-params.outputs.ci-build-id }}"
-          echo "=================================="
-          echo "Alternative output names to try:"
-          echo "stackName: ${{ steps.prepare-params.outputs.stackName }}"
-          echo "stack_name: ${{ steps.prepare-params.outputs.stack_name }}"
-          echo "ciBuildId: ${{ steps.prepare-params.outputs.ciBuildId }}"
-          # echo "ci_build_id: ${{ steps.prepare-params.outputs.ci_build_id }}"
           echo "=================================="
           
           # Create params directory if it doesn't exist
