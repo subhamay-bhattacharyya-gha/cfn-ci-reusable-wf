@@ -35,7 +35,7 @@ on:
     outputs:
       template-path:
         description: "Path to the CloudFormation template file"
-        value: ${{ jobs.check-environments.outputs.template-path }}
+        value: ${{ jobs.execution-path.outputs.template-path }}
 
 permissions:
   id-token: write
@@ -46,38 +46,7 @@ jobs:
     name: 🔎 Check Env
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    outputs:
-      template-path: ${{ steps.read-template.outputs.template-path }}
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        
-      - name: Read Template Configuration
-        id: read-template
-        run: |
-          # Read template name from cloudformation.json
-          CONFIG_FILE="${{ github.workspace }}/${{ inputs.cfn-directory }}/cloudformation.json"
-          
-          if [ ! -f "$CONFIG_FILE" ]; then
-            echo "❌ Configuration file not found: $CONFIG_FILE"
-            exit 1
-          fi
-          
-          TEMPLATE_NAME=$(jq -r '.template' "$CONFIG_FILE")
-          
-          if [ "$TEMPLATE_NAME" == "null" ] || [ -z "$TEMPLATE_NAME" ]; then
-            echo "❌ Template name not found in configuration file"
-            exit 1
-          fi
-          
-          TEMPLATE_PATH="${{ inputs.cfn-directory }}/$TEMPLATE_NAME"
-          
-          echo "🔍 Found CloudFormation template: $TEMPLATE_NAME"
-          echo "📁 Template path: $TEMPLATE_PATH"
-          
-          # Set template path as step output
-          echo "template-path=$TEMPLATE_PATH" >> $GITHUB_OUTPUT
-          
       - name: Check Available Environments
         id: check
         uses: subhamay-bhattacharyya-gha/check-environments-action@main
@@ -156,9 +125,36 @@ jobs:
     needs: [check-environments, check-branch-issue, detect-services, detect-changes]
     outputs:
       execution-path: ${{ steps.set-path.outputs.execution-path }}
+      template-path: ${{ steps.read-template.outputs.template-path }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        
+      - name: Read Template Configuration
+        id: read-template
+        run: |
+          # Read template name from cloudformation.json
+          CONFIG_FILE="${{ github.workspace }}/${{ inputs.cfn-directory }}/cloudformation.json"
+          
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "❌ Configuration file not found: $CONFIG_FILE"
+            exit 1
+          fi
+          
+          TEMPLATE_NAME=$(jq -r '.template' "$CONFIG_FILE")
+          
+          if [ "$TEMPLATE_NAME" == "null" ] || [ -z "$TEMPLATE_NAME" ]; then
+            echo "❌ Template name not found in configuration file"
+            exit 1
+          fi
+          
+          TEMPLATE_PATH="${{ inputs.cfn-directory }}/$TEMPLATE_NAME"
+          
+          echo "🔍 Found CloudFormation template: $TEMPLATE_NAME"
+          echo "📁 Template path: $TEMPLATE_PATH"
+          
+          # Set template path as step output
+          echo "template-path=$TEMPLATE_PATH" >> $GITHUB_OUTPUT
 
       - name: Determine services used and repo changes
         id: prepare-inputs
@@ -211,8 +207,8 @@ jobs:
           
       - name: Validate CloudFormation Template
         run: |
-          # Use template path from check-environments job
-          TEMPLATE_PATH="${{ needs.check-environments.outputs.template-path }}"
+          # Use template path from execution-path job
+          TEMPLATE_PATH="${{ needs.execution-path.outputs.template-path }}"
           TEMPLATE_NAME=$(basename "$TEMPLATE_PATH")
           
           echo "🔍 Validating CloudFormation template: $TEMPLATE_NAME"
@@ -293,8 +289,8 @@ jobs:
 
       - name: Run CloudFormation Lint
         run: |
-          # Use template path from check-environments job output
-          TEMPLATE_PATH="${{ needs.check-environments.outputs.template-path }}"
+          # Use template path from execution-path job output
+          TEMPLATE_PATH="${{ needs.execution-path.outputs.template-path }}"
           TEMPLATE_NAME=$(basename "$TEMPLATE_PATH")
           
           echo "🔍 Running cfn-lint on CloudFormation template: $TEMPLATE_NAME"
