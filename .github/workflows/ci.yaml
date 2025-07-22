@@ -580,31 +580,76 @@ jobs:
             if [ "$DEPLOYMENT_PARAMETERS" != "null" ] && [ -n "$DEPLOYMENT_PARAMETERS" ]; then
               echo "Converting parameters to CloudFormation format..."
               
-              # Create parameters file for CloudFormation
-              echo "$DEPLOYMENT_PARAMETERS" | jq -r 'to_entries | map("\(.key)=\(.value)") | join(" ")' > cf_params.txt
-              PARAM_OVERRIDES=$(cat cf_params.txt)
+              # Convert JSON object to space-separated key=value pairs for CloudFormation
+              PARAM_OVERRIDES=$(echo "$DEPLOYMENT_PARAMETERS" | jq -r 'to_entries | map("\(.key)=\(.value)") | join(" ")')
               
               echo "Parameter overrides: $PARAM_OVERRIDES"
               
-              # Deploy stack with parameters
-              aws cloudformation deploy \
-                --template-file "$DEPLOYMENT_TEMPLATE_PATH" \
-                --stack-name "$DEPLOYMENT_STACK_NAME" \
+              # Deploy stack with parameters and monitor progress
+              echo "🚀 Starting CloudFormation deployment..."
+              
+              # Start deployment in background and capture the deployment process
+              eval "aws cloudformation deploy \
+                --template-file '$DEPLOYMENT_TEMPLATE_PATH' \
+                --stack-name '$DEPLOYMENT_STACK_NAME' \
                 --parameter-overrides $PARAM_OVERRIDES \
                 --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-                --no-fail-on-empty-changeset
+                --no-fail-on-empty-changeset" &
+              
+              DEPLOY_PID=$!
+              
+              # Monitor stack events while deployment is running
+              echo "📋 Monitoring CloudFormation events..."
+              while kill -0 $DEPLOY_PID 2>/dev/null; do
+                echo "--- CloudFormation Events ($(date)) ---"
+                aws cloudformation describe-stack-events \
+                  --stack-name "$DEPLOYMENT_STACK_NAME" \
+                  --query 'StackEvents[?Timestamp>=`2024-01-01T00:00:00Z`] | [0:10].{Time:Timestamp,Status:ResourceStatus,Type:ResourceType,LogicalId:LogicalResourceId,Reason:ResourceStatusReason}' \
+                  --output table 2>/dev/null || echo "Stack events not yet available..."
+                sleep 10
+              done
+              
+              # Wait for the deployment to complete and get exit code
+              wait $DEPLOY_PID
+              DEPLOY_EXIT_CODE=$?
             else
               echo "No parameters provided, deploying without parameters..."
               
-              # Deploy stack without parameters
+              # Deploy stack without parameters and monitor progress
+              echo "🚀 Starting CloudFormation deployment..."
+              
               aws cloudformation deploy \
                 --template-file "$DEPLOYMENT_TEMPLATE_PATH" \
                 --stack-name "$DEPLOYMENT_STACK_NAME" \
                 --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-                --no-fail-on-empty-changeset
+                --no-fail-on-empty-changeset &
+              
+              DEPLOY_PID=$!
+              
+              # Monitor stack events while deployment is running
+              echo "📋 Monitoring CloudFormation events..."
+              while kill -0 $DEPLOY_PID 2>/dev/null; do
+                echo "--- CloudFormation Events ($(date)) ---"
+                aws cloudformation describe-stack-events \
+                  --stack-name "$DEPLOYMENT_STACK_NAME" \
+                  --query 'StackEvents[?Timestamp>=`2024-01-01T00:00:00Z`] | [0:10].{Time:Timestamp,Status:ResourceStatus,Type:ResourceType,LogicalId:LogicalResourceId,Reason:ResourceStatusReason}' \
+                  --output table 2>/dev/null || echo "Stack events not yet available..."
+                sleep 10
+              done
+              
+              # Wait for the deployment to complete and get exit code
+              wait $DEPLOY_PID
+              DEPLOY_EXIT_CODE=$?
             fi
             
-            if [ $? -eq 0 ]; then
+            # Final stack events after deployment
+            echo "📋 Final CloudFormation Events:"
+            aws cloudformation describe-stack-events \
+              --stack-name "$DEPLOYMENT_STACK_NAME" \
+              --query 'StackEvents[0:20].{Time:Timestamp,Status:ResourceStatus,Type:ResourceType,LogicalId:LogicalResourceId,Reason:ResourceStatusReason}' \
+              --output table 2>/dev/null || echo "Could not retrieve final stack events"
+            
+            if [ $DEPLOY_EXIT_CODE -eq 0 ]; then
               echo "✅ CloudFormation stack deployed successfully"
               
               # Get stack outputs
