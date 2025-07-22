@@ -238,6 +238,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: [execution-path]
     if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
+    outputs:
+      parameters: ${{ steps.prepare-params.outputs.parameters }}
+      stack-name: ${{ steps.prepare-params.outputs.stack-name }}
+    outputs:
+      parameters: ${{ steps.prepare-params.outputs.parameters }}
+      stack-name: ${{ steps.prepare-params.outputs.stack-name }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -351,6 +357,17 @@ jobs:
           
           echo "✅ CloudFormation linting completed successfully"
           
+      - name: Print Job Outputs
+        run: |
+          echo "📋 CloudFormation Lint Job Outputs:"
+          echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
+          echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
+          
+      - name: Print Job Outputs
+        run: |
+          echo "📋 CloudFormation Lint Job Outputs:"
+          echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
+          echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
           
       - name: Display Prepared Parameters
         run: |
@@ -363,7 +380,7 @@ jobs:
             echo "### Prepared Parameters:" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
-            echo "${{ steps.prepare-params.outputs.parameters }}|jq" >> $GITHUB_STEP_SUMMARY
+            echo '${{ steps.prepare-params.outputs.parameters }}' | jq . >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             
             echo "✅ CloudFormation parameters prepared successfully"
@@ -381,32 +398,54 @@ jobs:
     if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
     name: 🧳 Checkov Scan
     runs-on: ubuntu-latest
+    needs: [execution-path, cloudformation-lint]
+    outputs:
+      parameters: ${{ needs.cloudformation-lint.outputs.parameters }}
+      stack-name: ${{ needs.cloudformation-lint.outputs.stack-name }}
     environment: ${{ inputs.environment }}
-    needs: [execution-path]
+    needs: [execution-path, cloudformation-lint]
+    outputs:
+      parameters: ${{ needs.cloudformation-lint.outputs.parameters }}
+      stack-name: ${{ needs.cloudformation-lint.outputs.stack-name }}
     steps:
-        - name: Checkov Scan
+        - name: Checkout Code
+          uses: actions/checkout@v4
+          
+        - name: Print Job Inputs
           run: |
-              echo "Checkov Scan"
-    #   - name: Configure AWS Credentials
-    #     uses: aws-actions/configure-aws-credentials@v4
-    #     with:
-    #       role-to-assume: ${{ secrets.aws-role-arn }}
-    #       aws-region: ${{ vars.AWS_REGION }}
-    #   - name: Checkov Scan
-    #     uses: subhamay-bhattacharyya-gha/checkov-scan-action@main
-    #     id: checkov-scan
-    #     with:
-    #       iac-dir: ${{ inputs.cfn-directory }}
-    #       iac-framework: cloudformation
-    #       soft-fail: true
-    #   - name: Confirm SARIF file type
-    #     shell: bash
-    #     run: |
-    #       ls -la "${{ github.workspace }}"
-    #       file "${{ github.workspace }}/results.sarif"
-    #   - name: "📋 Summarize and Print Checkov Scan Report with Snippets"
-    #     id: summarize-report
-    #     uses: subhamay-bhattacharyya-gha/checkov-report-action@main
+            echo "📋 Checkov Scan Job Inputs:"
+            echo "Parameters: ${{ needs.cloudformation-lint.outputs.parameters }}"
+            echo "Stack Name: ${{ needs.cloudformation-lint.outputs.stack-name }}"
+          
+        - name: Print Job Inputs
+          run: |
+            echo "📋 Checkov Scan Job Inputs:"
+            echo "Parameters: ${{ needs.cloudformation-lint.outputs.parameters }}"
+            echo "Stack Name: ${{ needs.cloudformation-lint.outputs.stack-name }}"
+            
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: ${{ secrets.aws-role-arn }}
+            aws-region: ${{ vars.AWS_REGION }}
+
+        - name: Checkov Scan
+          uses: subhamay-bhattacharyya-gha/checkov-scan-action@main
+          id: checkov-scan
+          with:
+            iac-dir: ${{ inputs.cfn-directory }}
+            iac-framework: cloudformation
+            soft-fail: true
+            
+        - name: Confirm SARIF file type
+          shell: bash
+          run: |
+            ls -la "${{ github.workspace }}"
+            file "${{ github.workspace }}/results.sarif"
+
+        - name: "📋 Summarize and Print Checkov Scan Report with Snippets"
+          id: summarize-report
+          uses: subhamay-bhattacharyya-gha/checkov-report-action@main
 
   build-lambda:
     name: 🛠️ ⛔ Lambda Package
@@ -456,7 +495,16 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: [cloudformation-lint, cloudformation-validate, checkov-scan]
+    outputs:
+      parameters: ${{ needs.checkov-scan.outputs.parameters }}
+      stack-name: ${{ needs.checkov-scan.outputs.stack-name }}
     steps:
+        - name: Print Job Inputs
+          run: |
+            echo "📋 YOR Resource Tagging Job Inputs:"
+            echo "Parameters: ${{ needs.checkov-scan.outputs.parameters }}"
+            echo "Stack Name: ${{ needs.checkov-scan.outputs.stack-name }}"
+            
         - name: YOR Tagging
           run: |
             echo "YOR Tagging"
@@ -494,7 +542,16 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: [yor-resource-tagging]
+    outputs:
+      parameters: ${{ needs.yor-resource-tagging.outputs.parameters }}
+      stack-name: ${{ needs.yor-resource-tagging.outputs.stack-name }}
     steps:
+        - name: Print Job Inputs
+          run: |
+            echo "📋 CloudFormation Create Stack Job Inputs:"
+            echo "Parameters: ${{ needs.yor-resource-tagging.outputs.parameters }}"
+            echo "Stack Name: ${{ needs.yor-resource-tagging.outputs.stack-name }}"
+            
         - name: CloudFormation Create Stack
           run: |
             echo "CloudFormation Create Stack"
@@ -520,7 +577,16 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: [cloudformation-create]
+    outputs:
+      parameters: ${{ needs.cloudformation-create.outputs.parameters }}
+      stack-name: ${{ needs.cloudformation-create.outputs.stack-name }}
     steps:
+        - name: Print Job Inputs
+          run: |
+            echo "📋 CloudFormation Delete Stack Job Inputs:"
+            echo "Parameters: ${{ needs.cloudformation-create.outputs.parameters }}"
+            echo "Stack Name: ${{ needs.cloudformation-create.outputs.stack-name }}"
+            
         - name: CloudFormation Delete Stack
           run: |
             echo "CloudFormation Delete Stack"
