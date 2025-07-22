@@ -514,6 +514,7 @@ jobs:
             
         - name: Read Deployment Parameters
           id: read-params
+          shell: bash
           run: |
             echo "📋 Reading deployment parameters from artifact..."
             
@@ -521,8 +522,8 @@ jobs:
               echo "✅ Found deployment.json file"
               cat ./artifacts/deployment.json
               
-              # Extract values from JSON
-              PARAMETERS=$(jq -r '.parameters' ./artifacts/deployment.json)
+              # Extract values from JSON - compact format for parameters
+              PARAMETERS=$(jq -c '.parameters' ./artifacts/deployment.json)
               STACK_NAME=$(jq -r '."stack-name"' ./artifacts/deployment.json)
               TEMPLATE_PATH=$(jq -r '."template-path"' ./artifacts/deployment.json)
               
@@ -531,13 +532,21 @@ jobs:
               echo "Stack Name: $STACK_NAME"
               echo "Template Path: $TEMPLATE_PATH"
               
-              # Set as environment variables for use in subsequent steps
-              echo "DEPLOYMENT_PARAMETERS=$PARAMETERS" >> $GITHUB_ENV
+              # Set as environment variables for use in subsequent steps (using multiline format for JSON)
+              {
+                echo "DEPLOYMENT_PARAMETERS<<EOF"
+                echo "$PARAMETERS"
+                echo "EOF"
+              } >> $GITHUB_ENV
               echo "DEPLOYMENT_STACK_NAME=$STACK_NAME" >> $GITHUB_ENV
               echo "DEPLOYMENT_TEMPLATE_PATH=$TEMPLATE_PATH" >> $GITHUB_ENV
               
-              # Set as step outputs
-              echo "parameters=$PARAMETERS" >> $GITHUB_OUTPUT
+              # Set as step outputs (using multiline format for JSON)
+              {
+                echo "parameters<<EOF"
+                echo "$PARAMETERS"
+                echo "EOF"
+              } >> $GITHUB_OUTPUT
               echo "stack-name=$STACK_NAME" >> $GITHUB_OUTPUT
               echo "template-path=$TEMPLATE_PATH" >> $GITHUB_OUTPUT
             else
@@ -574,6 +583,7 @@ jobs:
             
         - name: Get Stack Name from Artifact
           id: get-stack-name
+          shell: bash
           run: |
             echo "📋 Reading stack name from deployment artifact..."
             
