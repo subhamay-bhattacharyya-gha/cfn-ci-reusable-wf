@@ -263,10 +263,6 @@ jobs:
         run: |
           echo "🔍 cfn-stack-params-action Output:"
           echo "=================================="
-          echo "All step outputs:"
-          echo "${{ toJSON(steps.prepare-params.outputs) }}"
-          echo "=================================="
-          echo "Individual outputs (current references):"
           echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
           echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
           echo "CI Build Id: ${{ steps.prepare-params.outputs.ci-build-id }}"
@@ -367,7 +363,7 @@ jobs:
             echo "### Prepared Parameters:" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
-            echo "${{ steps.prepare-params.outputs.parameters }}" >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.prepare-params.outputs.parameters }}|jq" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             
             echo "✅ CloudFormation parameters prepared successfully"
