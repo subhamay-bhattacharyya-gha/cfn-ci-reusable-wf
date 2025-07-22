@@ -370,12 +370,6 @@ jobs:
           echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
           echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
           
-      - name: Print Job Outputs
-        run: |
-          echo "📋 CloudFormation Lint Job Outputs:"
-          echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
-          echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
-          
       - name: Display Prepared Parameters
         run: |
           echo "## 📋 CloudFormation Parameters" >> $GITHUB_STEP_SUMMARY
@@ -549,12 +543,8 @@ jobs:
               echo "DEPLOYMENT_STACK_NAME=$STACK_NAME" >> $GITHUB_ENV
               echo "DEPLOYMENT_TEMPLATE_PATH=$TEMPLATE_PATH" >> $GITHUB_ENV
               
-              # Set as step outputs (using multiline format for JSON)
-              {
-                echo "parameters<<EOF"
-                echo "$PARAMETERS"
-                echo "EOF"
-              } >> $GITHUB_OUTPUT
+              # Set as step outputs (using single line format for JSON)
+              echo "parameters=$PARAMETERS" >> $GITHUB_OUTPUT
               echo "stack-name=$STACK_NAME" >> $GITHUB_OUTPUT
               echo "template-path=$TEMPLATE_PATH" >> $GITHUB_OUTPUT
             else
@@ -563,148 +553,12 @@ jobs:
             fi
             
         - name: Deploy CloudFormation Stack
-          run: |
-            echo "🚀 Deploying CloudFormation Stack..."
-            echo "Stack Name: $DEPLOYMENT_STACK_NAME"
-            echo "Template Path: $DEPLOYMENT_TEMPLATE_PATH"
-            echo "Parameters: $DEPLOYMENT_PARAMETERS"
-            
-            # Check if template file exists
-            if [ ! -f "$DEPLOYMENT_TEMPLATE_PATH" ]; then
-              echo "❌ Template file not found: $DEPLOYMENT_TEMPLATE_PATH"
-              exit 1
-            fi
-            
-            # Convert JSON parameters to CloudFormation parameter format
-            if [ "$DEPLOYMENT_PARAMETERS" != "null" ] && [ -n "$DEPLOYMENT_PARAMETERS" ]; then
-              echo "Converting parameters to CloudFormation format..."
-              
-              # Create a temporary parameter file for debugging
-              echo "$DEPLOYMENT_PARAMETERS" > params.json
-              echo "Parameters from JSON:"
-              cat params.json
-              
-              # Check if parameters are in CloudFormation format (array of objects) or simple key-value format
-              PARAM_FORMAT=$(echo "$DEPLOYMENT_PARAMETERS" | jq -r 'if type == "array" then "cfn" else "simple" end')
-              echo "Parameter format detected: $PARAM_FORMAT"
-              
-              # Build parameter overrides string based on format
-              PARAM_OVERRIDES=""
-              if [ "$PARAM_FORMAT" = "cfn" ]; then
-                # CloudFormation format: [{"ParameterName":"key","ParameterValue":"value"}]
-                while IFS= read -r param; do
-                  param_name=$(echo "$param" | jq -r '.ParameterName')
-                  param_value=$(echo "$param" | jq -r '.ParameterValue')
-                  if [ -n "$PARAM_OVERRIDES" ]; then
-                    PARAM_OVERRIDES="$PARAM_OVERRIDES $param_name=$param_value"
-                  else
-                    PARAM_OVERRIDES="$param_name=$param_value"
-                  fi
-                  echo "Adding parameter: $param_name=$param_value"
-                done < <(echo "$DEPLOYMENT_PARAMETERS" | jq -c '.[]')
-              else
-                # Simple key-value format: {"key":"value"}
-                while IFS= read -r key; do
-                  value=$(jq -r --arg k "$key" '.[$k]' params.json)
-                  if [ -n "$PARAM_OVERRIDES" ]; then
-                    PARAM_OVERRIDES="$PARAM_OVERRIDES $key=$value"
-                  else
-                    PARAM_OVERRIDES="$key=$value"
-                  fi
-                  echo "Adding parameter: $key=$value"
-                done < <(jq -r 'keys[]' params.json)
-              fi
-              
-              echo "Final parameter overrides: $PARAM_OVERRIDES"
-              
-              # Deploy stack with parameters and monitor progress
-              echo "🚀 Starting CloudFormation deployment with parameters..."
-              
-              # Test parameter parsing by doing a dry-run validation
-              echo "🔍 Testing parameter parsing with validate-template..."
-              aws cloudformation validate-template --template-body file://"$DEPLOYMENT_TEMPLATE_PATH" || echo "Template validation completed"
-              
-              # Show what parameters would be used
-              echo "🔍 Parameters that will be passed to CloudFormation:"
-              echo "$PARAM_OVERRIDES" | tr ' ' '\n' | while IFS='=' read -r key value; do
-                echo "  $key = $value"
-              done
-              
-              # Deploy stack with parameters directly
-              echo "🚀 Starting CloudFormation deployment with parameters..."
-              aws cloudformation deploy \
-                --template-file "$DEPLOYMENT_TEMPLATE_PATH" \
-                --stack-name "$DEPLOYMENT_STACK_NAME" \
-                --parameter-overrides $PARAM_OVERRIDES \
-                --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-                --no-fail-on-empty-changeset &
-              
-              DEPLOY_PID=$!
-              
-              # Monitor stack events while deployment is running
-              echo "📋 Monitoring CloudFormation events..."
-              while kill -0 $DEPLOY_PID 2>/dev/null; do
-                echo "--- CloudFormation Events ($(date)) ---"
-                aws cloudformation describe-stack-events \
-                  --stack-name "$DEPLOYMENT_STACK_NAME" \
-                  --query 'StackEvents[?Timestamp>=`2024-01-01T00:00:00Z`] | [0:10].{Time:Timestamp,Status:ResourceStatus,Type:ResourceType,LogicalId:LogicalResourceId,Reason:ResourceStatusReason}' \
-                  --output table 2>/dev/null || echo "Stack events not yet available..."
-                sleep 10
-              done
-              
-              # Wait for the deployment to complete and get exit code
-              wait $DEPLOY_PID
-              DEPLOY_EXIT_CODE=$?
-            else
-              echo "No parameters provided, deploying without parameters..."
-              
-              # Deploy stack without parameters and monitor progress
-              echo "🚀 Starting CloudFormation deployment..."
-              
-              aws cloudformation deploy \
-                --template-file "$DEPLOYMENT_TEMPLATE_PATH" \
-                --stack-name "$DEPLOYMENT_STACK_NAME" \
-                --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-                --no-fail-on-empty-changeset &
-              
-              DEPLOY_PID=$!
-              
-              # Monitor stack events while deployment is running
-              echo "📋 Monitoring CloudFormation events..."
-              while kill -0 $DEPLOY_PID 2>/dev/null; do
-                echo "--- CloudFormation Events ($(date)) ---"
-                aws cloudformation describe-stack-events \
-                  --stack-name "$DEPLOYMENT_STACK_NAME" \
-                  --query 'StackEvents[?Timestamp>=`2024-01-01T00:00:00Z`] | [0:10].{Time:Timestamp,Status:ResourceStatus,Type:ResourceType,LogicalId:LogicalResourceId,Reason:ResourceStatusReason}' \
-                  --output table 2>/dev/null || echo "Stack events not yet available..."
-                sleep 10
-              done
-              
-              # Wait for the deployment to complete and get exit code
-              wait $DEPLOY_PID
-              DEPLOY_EXIT_CODE=$?
-            fi
-            
-            # Final stack events after deployment
-            echo "📋 Final CloudFormation Events:"
-            aws cloudformation describe-stack-events \
-              --stack-name "$DEPLOYMENT_STACK_NAME" \
-              --query 'StackEvents[0:20].{Time:Timestamp,Status:ResourceStatus,Type:ResourceType,LogicalId:LogicalResourceId,Reason:ResourceStatusReason}' \
-              --output table 2>/dev/null || echo "Could not retrieve final stack events"
-            
-            if [ $DEPLOY_EXIT_CODE -eq 0 ]; then
-              echo "✅ CloudFormation stack deployed successfully"
-              
-              # Get stack outputs
-              echo "📋 Stack Outputs:"
-              aws cloudformation describe-stacks \
-                --stack-name "$DEPLOYMENT_STACK_NAME" \
-                --query 'Stacks[0].Outputs' \
-                --output table || echo "No outputs found"
-            else
-              echo "❌ CloudFormation stack deployment failed"
-              exit 1
-            fi
+          uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@feature/GHA-0001-initial-release
+          with: 
+            stack-name: ${{ steps.read-params.outputs.stack-name }}
+            stack-path: ${{ steps.read-params.outputs.template-path }}
+            deployment-parameters: ${{ steps.read-params.outputs.parameters }} 
+
   cloudformation-delete:
     if: ${{ needs.cloudformation-create.result == 'success' }}
     name: ✂️ CloudFormation Destroy
