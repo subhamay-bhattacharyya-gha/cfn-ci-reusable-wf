@@ -238,9 +238,6 @@ jobs:
     name: 📋 CloudFormation Lint
     runs-on: ubuntu-latest
     needs: [execution-path]
-    outputs:
-      parameters: ${{ steps.prepare-params.outputs.parameters }}
-      stack-name: ${{ steps.prepare-params.outputs.stack-name }}
 
     steps:
       - name: Checkout Code
@@ -276,20 +273,33 @@ jobs:
           PARAMS_DIR="${{ github.workspace }}/${{ inputs.cfn-directory }}/params"
           mkdir -p "$PARAMS_DIR"
           
-          # Create cfn-parameters.json file with the prepared parameters
-          PARAMETERS_OUTPUT='${{ steps.prepare-params.outputs.parameters }}'
+      - name: Create Deployment JSON File
+        id: create-deployment-json
+        run: |
+          echo "Creating deployment JSON file..."
           
-          if [ -n "$PARAMETERS_OUTPUT" ] && [ "$PARAMETERS_OUTPUT" != "null" ] && [ "$PARAMETERS_OUTPUT" != "" ]; then
-            echo "$PARAMETERS_OUTPUT" > "$PARAMS_DIR/cfn-parameters.json"
-            echo "✅ Created cfn-parameters.json at: $PARAMS_DIR/cfn-parameters.json"
-            echo "📄 File contents:"
-            cat "$PARAMS_DIR/cfn-parameters.json"
-          else
-            echo "⚠️ Parameters output is empty or null, creating empty JSON object"
-            echo '{}' > "$PARAMS_DIR/cfn-parameters.json"
-            echo "📄 Created empty parameters file at: $PARAMS_DIR/cfn-parameters.json"
-          fi
-
+          # Create directory for artifacts
+          mkdir -p artifacts
+          
+          # Create JSON file with parameters, stack-name, and template-path
+          cat > artifacts/deployment.json << EOF
+          {
+            "parameters": ${{ steps.prepare-params.outputs.parameters }},
+            "stack-name": "${{ steps.prepare-params.outputs.stack-name }}",
+            "template-path": "${{ needs.execution-path.outputs.template-path }}"
+          }
+          EOF
+          
+          echo "✅ Created deployment.json:"
+          cat artifacts/deployment.json
+          
+      - name: Upload Deployment JSON as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-parameters
+          path: artifacts/deployment.json
+          retention-days: 7
+          
       - name: Run CloudFormation Lint
         run: |
           # Use template path from execution-path job output
@@ -396,28 +406,14 @@ jobs:
     if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
     name: 🧳 Checkov Scan
     runs-on: ubuntu-latest
-    needs: [execution-path, cloudformation-lint]
+    needs: [execution-path]
     environment: ${{ inputs.environment }}
-    outputs:
-      parameters: ${{ needs.cloudformation-lint.outputs.parameters }}
-      stack-name: ${{ needs.cloudformation-lint.outputs.stack-name }}
 
     steps:
         - name: Checkout Code
           uses: actions/checkout@v4
           
-        - name: Print Job Inputs
-          run: |
-            echo "📋 Checkov Scan Job Inputs:"
-            echo "Parameters: ${{ needs.cloudformation-lint.outputs.parameters }}"
-            echo "Stack Name: ${{ needs.cloudformation-lint.outputs.stack-name }}"
           
-        - name: Print Job Inputs
-          run: |
-            echo "📋 Checkov Scan Job Inputs:"
-            echo "Parameters: ${{ needs.cloudformation-lint.outputs.parameters }}"
-            echo "Stack Name: ${{ needs.cloudformation-lint.outputs.stack-name }}"
-            
         - name: Configure AWS Credentials
           uses: aws-actions/configure-aws-credentials@v4
           with:
@@ -490,15 +486,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: [cloudformation-lint, cloudformation-validate, checkov-scan]
-    outputs:
-      parameters: ${{ needs.checkov-scan.outputs.parameters }}
-      stack-name: ${{ needs.checkov-scan.outputs.stack-name }}
     steps:
-        - name: Print Job Inputs
-          run: |
-            echo "📋 YOR Resource Tagging Job Inputs:"
-            echo "Parameters: ${{ needs.checkov-scan.outputs.parameters }}"
-            echo "Stack Name: ${{ needs.checkov-scan.outputs.stack-name }}"
             
         - name: YOR Tagging
           run: |
@@ -537,15 +525,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: [yor-resource-tagging]
-    outputs:
-      parameters: ${{ needs.yor-resource-tagging.outputs.parameters }}
-      stack-name: ${{ needs.yor-resource-tagging.outputs.stack-name }}
+
     steps:
-        - name: Print Job Inputs
-          run: |
-            echo "📋 CloudFormation Create Stack Job Inputs:"
-            echo "Parameters: ${{ needs.yor-resource-tagging.outputs.parameters }}"
-            echo "Stack Name: ${{ needs.yor-resource-tagging.outputs.stack-name }}"
             
         - name: CloudFormation Create Stack
           run: |
@@ -572,15 +553,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: [cloudformation-create]
-    outputs:
-      parameters: ${{ needs.cloudformation-create.outputs.parameters }}
-      stack-name: ${{ needs.cloudformation-create.outputs.stack-name }}
+
     steps:
-        - name: Print Job Inputs
-          run: |
-            echo "📋 CloudFormation Delete Stack Job Inputs:"
-            echo "Parameters: ${{ needs.cloudformation-create.outputs.parameters }}"
-            echo "Stack Name: ${{ needs.cloudformation-create.outputs.stack-name }}"
             
         - name: CloudFormation Delete Stack
           run: |
