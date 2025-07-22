@@ -266,7 +266,6 @@ jobs:
           echo "=================================="
           echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
           echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
-          echo "CI Build Id: ${{ steps.prepare-params.outputs.ci-build-id }}"
           echo "=================================="
           
           # Create params directory if it doesn't exist
