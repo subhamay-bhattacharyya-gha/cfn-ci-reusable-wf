@@ -482,7 +482,7 @@ jobs:
 
   yor-resource-tagging:
     name: 📋 Apply Git Metadata Tags using YOR
-    if: ${{ needs.cloudformation-lint.result == 'success' && needs.cloudformation-validate == 'success' && needs.checkov-scan == 'success' }}
+    if: ${{ needs.cloudformation-lint.result == 'success' && needs.cloudformation-validate.result == 'success' && needs.checkov-scan.result == 'success' }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: [cloudformation-lint, cloudformation-validate, checkov-scan]
