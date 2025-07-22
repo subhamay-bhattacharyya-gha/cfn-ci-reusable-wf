@@ -515,6 +515,12 @@ jobs:
             name: deployment-parameters
             path: ./artifacts
             
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: ${{ secrets.aws-role-arn }}
+            aws-region: ${{ vars.AWS_REGION }}
+
         - name: Read Deployment Parameters
           id: read-params
           shell: bash
@@ -612,11 +618,6 @@ jobs:
               exit 1
             fi
 
-        - name: Configure AWS Credentials
-          uses: aws-actions/configure-aws-credentials@v4
-          with:
-            role-to-assume: ${{ secrets.aws-role-arn }}
-            aws-region: ${{ vars.AWS_REGION }}
             
   cloudformation-delete:
     if: ${{ needs.cloudformation-create.result == 'success' }}
@@ -656,17 +657,17 @@ jobs:
               exit 1
             fi
             
-        - name: CloudFormation Delete Stack
-          run: |
-            echo "CloudFormation Delete Stack"
-            echo "Deleting Stack: $DEPLOYMENT_STACK_NAME"
-
         - name: Configure AWS Credentials
           uses: aws-actions/configure-aws-credentials@v4
           with:
             role-to-assume: ${{ secrets.aws-role-arn }}
             aws-region: ${{ vars.AWS_REGION }}
 
+        - name: CloudFormation Delete Stack
+          run: |
+            echo "CloudFormation Delete Stack"
+            echo "Deleting Stack: $DEPLOYMENT_STACK_NAME"
+            
   create-pull-request:
     name: 🚀 Create Pull Request
     runs-on: ubuntu-latest
