@@ -497,27 +497,6 @@ jobs:
     #       cfn-directory: ${{ inputs.cfn-directory }}
     #       github-token: ${{ secrets.GITHUB_TOKEN }}
 
-#   cloudformation-plan:
-#     if: ${{ fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
-#     name: 📋 CloudFormation Plan
-#     runs-on: ubuntu-latest
-#     environment: ${{ inputs.environment }}
-#     needs: [yor-resource-tagging]
-#     steps:
-#       - name: Configure AWS Credentials
-#         uses: aws-actions/configure-aws-credentials@v4
-#         with:
-#           role-to-assume: ${{ secrets.aws-role-arn }}
-#           aws-region: ${{ vars.AWS_REGION }}
-#       - name: CloudFormation Plan
-#         id: plan
-#         uses: subhamay-bhattacharyya-gha/cf-plan-action@main
-#         with:
-#           cfn-template-dir: ${{ inputs.cfn-template-dir }}
-#           cfn-params-file: parameters.json
-#           s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
-#           s3-region: ${{ vars.AWS_REGION }}
-#           ci-build: ${{ inputs.ci-build }}
 
   cloudformation-create:
     if: ${{ needs.yor-resource-tagging.result == 'success' }}
@@ -527,10 +506,51 @@ jobs:
     needs: [yor-resource-tagging]
 
     steps:
+        - name: Download Deployment Parameters Artifact
+          uses: actions/download-artifact@v4
+          with:
+            name: deployment-parameters
+            path: ./artifacts
+            
+        - name: Read Deployment Parameters
+          id: read-params
+          run: |
+            echo "📋 Reading deployment parameters from artifact..."
+            
+            if [ -f "./artifacts/deployment.json" ]; then
+              echo "✅ Found deployment.json file"
+              cat ./artifacts/deployment.json
+              
+              # Extract values from JSON
+              PARAMETERS=$(jq -r '.parameters' ./artifacts/deployment.json)
+              STACK_NAME=$(jq -r '."stack-name"' ./artifacts/deployment.json)
+              TEMPLATE_PATH=$(jq -r '."template-path"' ./artifacts/deployment.json)
+              
+              echo "📋 Extracted Parameters:"
+              echo "Parameters: $PARAMETERS"
+              echo "Stack Name: $STACK_NAME"
+              echo "Template Path: $TEMPLATE_PATH"
+              
+              # Set as environment variables for use in subsequent steps
+              echo "DEPLOYMENT_PARAMETERS=$PARAMETERS" >> $GITHUB_ENV
+              echo "DEPLOYMENT_STACK_NAME=$STACK_NAME" >> $GITHUB_ENV
+              echo "DEPLOYMENT_TEMPLATE_PATH=$TEMPLATE_PATH" >> $GITHUB_ENV
+              
+              # Set as step outputs
+              echo "parameters=$PARAMETERS" >> $GITHUB_OUTPUT
+              echo "stack-name=$STACK_NAME" >> $GITHUB_OUTPUT
+              echo "template-path=$TEMPLATE_PATH" >> $GITHUB_OUTPUT
+            else
+              echo "❌ deployment.json file not found"
+              exit 1
+            fi
             
         - name: CloudFormation Create Stack
           run: |
             echo "CloudFormation Create Stack"
+            echo "Using Parameters: $DEPLOYMENT_PARAMETERS"
+            echo "Using Stack Name: $DEPLOYMENT_STACK_NAME"
+            echo "Using Template Path: $DEPLOYMENT_TEMPLATE_PATH"
 
         - name: Configure AWS Credentials
           uses: aws-actions/configure-aws-credentials@v4
@@ -538,15 +558,6 @@ jobs:
             role-to-assume: ${{ secrets.aws-role-arn }}
             aws-region: ${{ vars.AWS_REGION }}
             
-    #   - name: CloudFormation Apply
-    #     uses: subhamay-bhattacharyya-gha/cf-apply-action@main
-    #     id: apply
-    #     with:
-    #       cfn-template-dir: ${{ inputs.cfn-template-dir }}
-    #       s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
-    #       s3-region: ${{ vars.AWS_REGION }}
-    #       ci-build: ${{ inputs.ci-build }}
-
   cloudformation-delete:
     if: ${{ needs.cloudformation-create.result == 'success' }}
     name: ✂️ CloudFormation Destroy
@@ -555,25 +566,45 @@ jobs:
     needs: [cloudformation-create]
 
     steps:
+        - name: Download Deployment Parameters Artifact
+          uses: actions/download-artifact@v4
+          with:
+            name: deployment-parameters
+            path: ./artifacts
+            
+        - name: Get Stack Name from Artifact
+          id: get-stack-name
+          run: |
+            echo "📋 Reading stack name from deployment artifact..."
+            
+            if [ -f "./artifacts/deployment.json" ]; then
+              echo "✅ Found deployment.json file"
+              
+              # Extract stack name from JSON
+              STACK_NAME=$(jq -r '."stack-name"' ./artifacts/deployment.json)
+              
+              echo "📋 Extracted Stack Name: $STACK_NAME"
+              
+              # Set as environment variable for use in subsequent steps
+              echo "DEPLOYMENT_STACK_NAME=$STACK_NAME" >> $GITHUB_ENV
+              
+              # Set as step output
+              echo "stack-name=$STACK_NAME" >> $GITHUB_OUTPUT
+            else
+              echo "❌ deployment.json file not found"
+              exit 1
+            fi
             
         - name: CloudFormation Delete Stack
           run: |
             echo "CloudFormation Delete Stack"
+            echo "Deleting Stack: $DEPLOYMENT_STACK_NAME"
 
         - name: Configure AWS Credentials
           uses: aws-actions/configure-aws-credentials@v4
           with:
             role-to-assume: ${{ secrets.aws-role-arn }}
             aws-region: ${{ vars.AWS_REGION }}
-
-    #   - name: CloudFormation Destroy
-    #     uses: subhamay-bhattacharyya-gha/cf-destroy-action@main
-    #     id: destroy
-    #     with:
-    #       cfn-template-dir: ${{ inputs.cfn-template-dir }}
-    #       s3-bucket: ${{ vars.CF_STATE_BUCKET_NAME }}
-    #       s3-region: ${{ vars.AWS_REGION }}
-    #       ci-build: ${{ inputs.ci-build }}
 
   create-pull-request:
     name: 🚀 Create Pull Request
