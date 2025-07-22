@@ -506,6 +506,9 @@ jobs:
     needs: [yor-resource-tagging]
 
     steps:
+        - name: Checkout Code
+          uses: actions/checkout@v4
+          
         - name: Download Deployment Parameters Artifact
           uses: actions/download-artifact@v4
           with:
