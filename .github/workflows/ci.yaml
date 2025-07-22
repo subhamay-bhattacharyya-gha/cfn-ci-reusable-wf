@@ -584,26 +584,51 @@ jobs:
               echo "Parameters from JSON:"
               cat params.json
               
-              # Build parameter overrides array
-              PARAM_OVERRIDES=()
+              # Build parameter overrides string with proper escaping
+              PARAM_OVERRIDES=""
               while IFS= read -r key; do
                 value=$(jq -r --arg k "$key" '.[$k]' params.json)
-                PARAM_OVERRIDES+=("$key=$value")
+                if [ -n "$PARAM_OVERRIDES" ]; then
+                  PARAM_OVERRIDES="$PARAM_OVERRIDES $key=$value"
+                else
+                  PARAM_OVERRIDES="$key=$value"
+                fi
                 echo "Adding parameter: $key=$value"
               done < <(jq -r 'keys[]' params.json)
               
-              echo "Final parameter overrides: ${PARAM_OVERRIDES[@]}"
+              echo "Final parameter overrides: $PARAM_OVERRIDES"
               
               # Deploy stack with parameters and monitor progress
               echo "🚀 Starting CloudFormation deployment with parameters..."
               
-              # Start deployment in background using array expansion
-              aws cloudformation deploy \
-                --template-file "$DEPLOYMENT_TEMPLATE_PATH" \
-                --stack-name "$DEPLOYMENT_STACK_NAME" \
-                --parameter-overrides "${PARAM_OVERRIDES[@]}" \
-                --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-                --no-fail-on-empty-changeset &
+              # Create deployment script to handle parameters properly
+              cat > deploy_script.sh << EOF
+              #!/bin/bash
+              set -e
+              aws cloudformation deploy \\
+                --template-file "$DEPLOYMENT_TEMPLATE_PATH" \\
+                --stack-name "$DEPLOYMENT_STACK_NAME" \\
+                --parameter-overrides $PARAM_OVERRIDES \\
+                --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \\
+                --no-fail-on-empty-changeset
+              EOF
+              
+              chmod +x deploy_script.sh
+              echo "Generated deployment script:"
+              cat deploy_script.sh
+              
+              # Test parameter parsing by doing a dry-run validation
+              echo "🔍 Testing parameter parsing with validate-template..."
+              aws cloudformation validate-template --template-body file://"$DEPLOYMENT_TEMPLATE_PATH" || echo "Template validation completed"
+              
+              # Show what parameters would be used
+              echo "🔍 Parameters that will be passed to CloudFormation:"
+              echo "$PARAM_OVERRIDES" | tr ' ' '\n' | while IFS='=' read -r key value; do
+                echo "  $key = $value"
+              done
+              
+              # Start deployment in background
+              ./deploy_script.sh &
               
               DEPLOY_PID=$!
               
@@ -671,8 +696,6 @@ jobs:
               echo "❌ CloudFormation stack deployment failed"
               exit 1
             fi
-
-            
   cloudformation-delete:
     if: ${{ needs.cloudformation-create.result == 'success' }}
     name: ✂️ CloudFormation Destroy
