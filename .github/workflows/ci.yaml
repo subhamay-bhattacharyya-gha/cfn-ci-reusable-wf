@@ -584,38 +584,41 @@ jobs:
               echo "Parameters from JSON:"
               cat params.json
               
-              # Build parameter overrides string with proper escaping
+              # Check if parameters are in CloudFormation format (array of objects) or simple key-value format
+              PARAM_FORMAT=$(echo "$DEPLOYMENT_PARAMETERS" | jq -r 'if type == "array" then "cfn" else "simple" end')
+              echo "Parameter format detected: $PARAM_FORMAT"
+              
+              # Build parameter overrides string based on format
               PARAM_OVERRIDES=""
-              while IFS= read -r key; do
-                value=$(jq -r --arg k "$key" '.[$k]' params.json)
-                if [ -n "$PARAM_OVERRIDES" ]; then
-                  PARAM_OVERRIDES="$PARAM_OVERRIDES $key=$value"
-                else
-                  PARAM_OVERRIDES="$key=$value"
-                fi
-                echo "Adding parameter: $key=$value"
-              done < <(jq -r 'keys[]' params.json)
+              if [ "$PARAM_FORMAT" = "cfn" ]; then
+                # CloudFormation format: [{"ParameterName":"key","ParameterValue":"value"}]
+                while IFS= read -r param; do
+                  param_name=$(echo "$param" | jq -r '.ParameterName')
+                  param_value=$(echo "$param" | jq -r '.ParameterValue')
+                  if [ -n "$PARAM_OVERRIDES" ]; then
+                    PARAM_OVERRIDES="$PARAM_OVERRIDES $param_name=$param_value"
+                  else
+                    PARAM_OVERRIDES="$param_name=$param_value"
+                  fi
+                  echo "Adding parameter: $param_name=$param_value"
+                done < <(echo "$DEPLOYMENT_PARAMETERS" | jq -c '.[]')
+              else
+                # Simple key-value format: {"key":"value"}
+                while IFS= read -r key; do
+                  value=$(jq -r --arg k "$key" '.[$k]' params.json)
+                  if [ -n "$PARAM_OVERRIDES" ]; then
+                    PARAM_OVERRIDES="$PARAM_OVERRIDES $key=$value"
+                  else
+                    PARAM_OVERRIDES="$key=$value"
+                  fi
+                  echo "Adding parameter: $key=$value"
+                done < <(jq -r 'keys[]' params.json)
+              fi
               
               echo "Final parameter overrides: $PARAM_OVERRIDES"
               
               # Deploy stack with parameters and monitor progress
               echo "🚀 Starting CloudFormation deployment with parameters..."
-              
-              # Create deployment script to handle parameters properly
-              cat > deploy_script.sh << EOF
-              #!/bin/bash
-              set -e
-              aws cloudformation deploy \\
-                --template-file "$DEPLOYMENT_TEMPLATE_PATH" \\
-                --stack-name "$DEPLOYMENT_STACK_NAME" \\
-                --parameter-overrides $PARAM_OVERRIDES \\
-                --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \\
-                --no-fail-on-empty-changeset
-              EOF
-              
-              chmod +x deploy_script.sh
-              echo "Generated deployment script:"
-              cat deploy_script.sh
               
               # Test parameter parsing by doing a dry-run validation
               echo "🔍 Testing parameter parsing with validate-template..."
@@ -627,8 +630,14 @@ jobs:
                 echo "  $key = $value"
               done
               
-              # Start deployment in background
-              ./deploy_script.sh &
+              # Deploy stack with parameters directly
+              echo "🚀 Starting CloudFormation deployment with parameters..."
+              aws cloudformation deploy \
+                --template-file "$DEPLOYMENT_TEMPLATE_PATH" \
+                --stack-name "$DEPLOYMENT_STACK_NAME" \
+                --parameter-overrides $PARAM_OVERRIDES \
+                --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+                --no-fail-on-empty-changeset &
               
               DEPLOY_PID=$!
               
