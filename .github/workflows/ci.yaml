@@ -554,12 +554,60 @@ jobs:
               exit 1
             fi
             
-        - name: CloudFormation Create Stack
+        - name: Deploy CloudFormation Stack
           run: |
-            echo "CloudFormation Create Stack"
-            echo "Using Parameters: $DEPLOYMENT_PARAMETERS"
-            echo "Using Stack Name: $DEPLOYMENT_STACK_NAME"
-            echo "Using Template Path: $DEPLOYMENT_TEMPLATE_PATH"
+            echo "🚀 Deploying CloudFormation Stack..."
+            echo "Stack Name: $DEPLOYMENT_STACK_NAME"
+            echo "Template Path: $DEPLOYMENT_TEMPLATE_PATH"
+            echo "Parameters: $DEPLOYMENT_PARAMETERS"
+            
+            # Check if template file exists
+            if [ ! -f "$DEPLOYMENT_TEMPLATE_PATH" ]; then
+              echo "❌ Template file not found: $DEPLOYMENT_TEMPLATE_PATH"
+              exit 1
+            fi
+            
+            # Convert JSON parameters to CloudFormation parameter format
+            if [ "$DEPLOYMENT_PARAMETERS" != "null" ] && [ -n "$DEPLOYMENT_PARAMETERS" ]; then
+              echo "Converting parameters to CloudFormation format..."
+              
+              # Create parameters file for CloudFormation
+              echo "$DEPLOYMENT_PARAMETERS" | jq -r 'to_entries | map("\(.key)=\(.value)") | join(" ")' > cf_params.txt
+              PARAM_OVERRIDES=$(cat cf_params.txt)
+              
+              echo "Parameter overrides: $PARAM_OVERRIDES"
+              
+              # Deploy stack with parameters
+              aws cloudformation deploy \
+                --template-file "$DEPLOYMENT_TEMPLATE_PATH" \
+                --stack-name "$DEPLOYMENT_STACK_NAME" \
+                --parameter-overrides $PARAM_OVERRIDES \
+                --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+                --no-fail-on-empty-changeset
+            else
+              echo "No parameters provided, deploying without parameters..."
+              
+              # Deploy stack without parameters
+              aws cloudformation deploy \
+                --template-file "$DEPLOYMENT_TEMPLATE_PATH" \
+                --stack-name "$DEPLOYMENT_STACK_NAME" \
+                --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+                --no-fail-on-empty-changeset
+            fi
+            
+            if [ $? -eq 0 ]; then
+              echo "✅ CloudFormation stack deployed successfully"
+              
+              # Get stack outputs
+              echo "📋 Stack Outputs:"
+              aws cloudformation describe-stacks \
+                --stack-name "$DEPLOYMENT_STACK_NAME" \
+                --query 'Stacks[0].Outputs' \
+                --output table || echo "No outputs found"
+            else
+              echo "❌ CloudFormation stack deployment failed"
+              exit 1
+            fi
 
         - name: Configure AWS Credentials
           uses: aws-actions/configure-aws-credentials@v4
