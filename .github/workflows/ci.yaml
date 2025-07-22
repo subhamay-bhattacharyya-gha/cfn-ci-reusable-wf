@@ -311,15 +311,9 @@ jobs:
           # Run cfn-lint and capture output (don't exit on failure yet)
           set +e  # Disable exit on error temporarily
           
-          # Check if parameters file exists and add it to cfn-lint command
-          PARAMS_PATH="${{ github.workspace }}/${{ inputs.cfn-directory }}/params/cfn-parameters.json"
-          if [ -f "$PARAMS_PATH" ]; then
-            echo "Using parameters file: $PARAMS_PATH"
-            LINT_OUTPUT=$(cfn-lint --format parseable "$FULL_TEMPLATE_PATH" --parameters "$PARAMS_PATH" 2>&1)    
-          else
-            echo "Parameters file not found: $PARAMS_PATH - running cfn-lint without parameters"
-            LINT_OUTPUT=$(cfn-lint --format parseable  "$FULL_TEMPLATE_PATH" 2>&1)
-          fi
+          # Run cfn-lint (cfn-lint validates template structure and syntax, not parameter values)
+          echo "Running cfn-lint on template: $FULL_TEMPLATE_PATH"
+          LINT_OUTPUT=$(cfn-lint --format parseable "$FULL_TEMPLATE_PATH" 2>&1)
           
           LINT_EXIT_CODE=$?
           set -e  # Re-enable exit on error
