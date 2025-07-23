@@ -260,13 +260,11 @@ jobs:
           ci-build: ${{ inputs.ci-build }}
           environment: 'ci'
           
-      - name: Print cfn-stack-params-action Output
+      - name: Print Job Outputs
         run: |
-          echo "🔍 cfn-stack-params-action Output:"
-          echo "=================================="
+          echo "�  CloudFormation Lint Job Outputs:"
           echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
           echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
-          echo "=================================="
           
           # Create params directory if it doesn't exist
           PARAMS_DIR="${{ github.workspace }}/${{ inputs.cfn-directory }}/params"
@@ -300,75 +298,9 @@ jobs:
           retention-days: 7
           
       - name: Run CloudFormation Lint
-        run: |
-          # Use template path from execution-path job output
-          TEMPLATE_PATH="${{ needs.execution-path.outputs.template-path }}"
-          TEMPLATE_NAME=$(basename "$TEMPLATE_PATH")
-          
-          echo "🔍 Running cfn-lint on CloudFormation template: $TEMPLATE_NAME"
-          
-          # Ensure we're working with the full path from workspace root
-          FULL_TEMPLATE_PATH="${{ github.workspace }}/$TEMPLATE_PATH"
-          
-          if [ ! -f "$FULL_TEMPLATE_PATH" ]; then
-            echo "❌ Template file not found: $FULL_TEMPLATE_PATH"
-            exit 1
-          fi
-          
-          echo "Linting template: $TEMPLATE_PATH"
-          
-          # Run cfn-lint and capture output (don't exit on failure yet)
-          set +e  # Disable exit on error temporarily
-          
-          # Run cfn-lint (cfn-lint validates template structure and syntax, not parameter values)
-          echo "Running cfn-lint on template: $FULL_TEMPLATE_PATH"
-          LINT_OUTPUT=$(cfn-lint --format parseable "$FULL_TEMPLATE_PATH" 2>&1)
-          
-          LINT_EXIT_CODE=$?
-          set -e  # Re-enable exit on error
-          
-          # Add cfn-lint results to GitHub Step Summary
-          echo "## 📋 CloudFormation Lint Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Template:** \`$TEMPLATE_PATH\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ $LINT_EXIT_CODE -eq 0 ]; then
-            echo "### ✅ Linting Passed" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "No issues found in the CloudFormation template." >> $GITHUB_STEP_SUMMARY
-            echo "✅ Template $TEMPLATE_PATH passed linting"
-          else
-            echo "### ❌ Linting Issues Found (Exit Code: $LINT_EXIT_CODE)" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            if [ -n "$LINT_OUTPUT" ]; then
-              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-              echo "$LINT_OUTPUT" >> $GITHUB_STEP_SUMMARY
-              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "No detailed output available from cfn-lint." >> $GITHUB_STEP_SUMMARY
-            fi
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**cfn-lint Exit Codes:**" >> $GITHUB_STEP_SUMMARY
-            echo "- 0: No issues" >> $GITHUB_STEP_SUMMARY
-            echo "- 2: Warnings found" >> $GITHUB_STEP_SUMMARY
-            echo "- 4: Errors found" >> $GITHUB_STEP_SUMMARY
-            echo "- 8: Invalid CLI arguments" >> $GITHUB_STEP_SUMMARY
-            echo "- 16: Fatal errors" >> $GITHUB_STEP_SUMMARY
-            
-            echo "❌ Template $TEMPLATE_PATH failed linting (exit code: $LINT_EXIT_CODE)"
-            echo "Lint output:"
-            echo "$LINT_OUTPUT"
-            exit $LINT_EXIT_CODE
-          fi
-          
-          echo "✅ CloudFormation linting completed successfully"
-          
-      - name: Print Job Outputs
-        run: |
-          echo "📋 CloudFormation Lint Job Outputs:"
-          echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
-          echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
+        uses: subhamay-bhattacharyya-gha/cfn-lint-action@feature/GHA-0001-initial-release
+        with:
+          template-path: ${{ needs.execution-path.outputs.template-path }}
           
       - name: Display Prepared Parameters
         run: |
