@@ -520,7 +520,7 @@ jobs:
           run: |
             echo "📋 CloudFormation Deployment Parameters Summary"
             echo "=============================================="
-            echo "Stack Name: ${{ env.DEPLOYMENT_STACK_NAME }}"
+            echo "Stack Name: ${{ steps.read-params.outputs.stack-name }}"
             echo "Template Path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}"
             echo "Parameters: ${{ env.DEPLOYMENT_PARAMETERS }}"
             
