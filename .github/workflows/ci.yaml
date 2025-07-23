@@ -484,12 +484,6 @@ jobs:
         - name: YOR Tagging
           run: |
             echo "YOR Tagging"
-    #   - name: Call Yor Reusable Action
-    #     uses: subhamay-bhattacharyya-gha/cf-yor-action@main
-    #     with:
-    #       cfn-directory: ${{ inputs.cfn-directory }}
-    #       github-token: ${{ secrets.GITHUB_TOKEN }}
-
 
   cloudformation-create:
     if: ${{ needs.yor-resource-tagging.result == 'success' }}
@@ -516,48 +510,36 @@ jobs:
 
         - name: Read Deployment Parameters
           id: read-params
+          uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@feature/GHA-0001-initial-release
+          with:
+            artifact-path: './artifacts/deployment.json'
+
+        - name: Print the Deployment Parameters
+          id: print-params
           shell: bash
           run: |
-            echo "📋 Reading deployment parameters from artifact..."
+            echo "📋 CloudFormation Deployment Parameters Summary"
+            echo "=============================================="
+            echo "Stack Name: ${{ steps.read-params.outputs.stack-name }}"
+            echo "Template Path: ${{ steps.read-params.outputs.template-path }}"
+            echo "Parameters:"
             
-            if [ -f "./artifacts/deployment.json" ]; then
-              echo "✅ Found deployment.json file"
-              cat ./artifacts/deployment.json
-              
-              # Extract values from JSON - compact format for parameters
-              PARAMETERS=$(jq -c '.parameters' ./artifacts/deployment.json)
-              STACK_NAME=$(jq -r '."stack-name"' ./artifacts/deployment.json)
-              TEMPLATE_PATH=$(jq -r '."template-path"' ./artifacts/deployment.json)
-              
-              echo "📋 Extracted Parameters:"
-              echo "Parameters: $PARAMETERS"
-              echo "Stack Name: $STACK_NAME"
-              echo "Template Path: $TEMPLATE_PATH"
-              
-              # Set as environment variables for use in subsequent steps (using multiline format for JSON)
-              {
-                echo "DEPLOYMENT_PARAMETERS<<EOF"
-                echo "$PARAMETERS"
-                echo "EOF"
-              } >> $GITHUB_ENV
-              echo "DEPLOYMENT_STACK_NAME=$STACK_NAME" >> $GITHUB_ENV
-              echo "DEPLOYMENT_TEMPLATE_PATH=$TEMPLATE_PATH" >> $GITHUB_ENV
-              
-              # Set as step outputs (using single line format for JSON)
-              echo "parameters=$PARAMETERS" >> $GITHUB_OUTPUT
-              echo "stack-name=$STACK_NAME" >> $GITHUB_OUTPUT
-              echo "template-path=$TEMPLATE_PATH" >> $GITHUB_OUTPUT
+            # Check if parameters are in CloudFormation format (array of objects) or simple key-value format
+            if [[ "${{ steps.read-params.outputs.parameters }}" == "["* ]]; then
+              # CloudFormation format: [{"ParameterName":"key","ParameterValue":"value"}]
+              echo "${{ steps.read-params.outputs.parameters }}" | jq -r '.[] | "  \(.ParameterName) = \(.ParameterValue)"'
             else
-              echo "❌ deployment.json file not found"
-              exit 1
+              # Simple key-value format: {"key":"value"}
+              echo "${{ steps.read-params.outputs.parameters }}" | jq -r 'to_entries[] | "  \(.key) = \(.value)"'
             fi
             
-        - name: Deploy CloudFormation Stack
-          uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@feature/GHA-0001-initial-release
-          with: 
-            stack-name: ${{ steps.read-params.outputs.stack-name }}
-            stack-path: ${{ steps.read-params.outputs.template-path }}
-            deployment-parameters: ${{ steps.read-params.outputs.parameters }} 
+            
+        # - name: Deploy CloudFormation Stack
+        #   uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@feature/GHA-0001-initial-release
+        #   with: 
+        #     stack-name: ${{ steps.read-params.outputs.stack-name }}
+        #     stack-path: ${{ steps.read-params.outputs.template-path }}
+        #     deployment-parameters: ${{ steps.read-params.outputs.parameters }} 
 
   cloudformation-delete:
     if: ${{ needs.cloudformation-create.result == 'success' }}
@@ -567,46 +549,37 @@ jobs:
     needs: [cloudformation-create]
 
     steps:
-        - name: Download Deployment Parameters Artifact
-          uses: actions/download-artifact@v4
-          with:
-            name: deployment-parameters
-            path: ./artifacts
-            
-        - name: Get Stack Name from Artifact
-          id: get-stack-name
-          shell: bash
-          run: |
-            echo "📋 Reading stack name from deployment artifact..."
-            
-            if [ -f "./artifacts/deployment.json" ]; then
-              echo "✅ Found deployment.json file"
-              
-              # Extract stack name from JSON
-              STACK_NAME=$(jq -r '."stack-name"' ./artifacts/deployment.json)
-              
-              echo "📋 Extracted Stack Name: $STACK_NAME"
-              
-              # Set as environment variable for use in subsequent steps
-              echo "DEPLOYMENT_STACK_NAME=$STACK_NAME" >> $GITHUB_ENV
-              
-              # Set as step output
-              echo "stack-name=$STACK_NAME" >> $GITHUB_OUTPUT
-            else
-              echo "❌ deployment.json file not found"
-              exit 1
-            fi
-            
-        - name: Configure AWS Credentials
-          uses: aws-actions/configure-aws-credentials@v4
-          with:
-            role-to-assume: ${{ secrets.aws-role-arn }}
-            aws-region: ${{ vars.AWS_REGION }}
+      - name: Download Deployment Parameters Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-parameters
+          path: ./artifacts
+        
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.aws-role-arn }}
+          aws-region: ${{ vars.AWS_REGION }}
 
-        - name: CloudFormation Delete Stack
-          run: |
-            echo "CloudFormation Delete Stack"
-            echo "Deleting Stack: $DEPLOYMENT_STACK_NAME"
+      - name: Read Deployment Parameters
+        id: read-params
+        uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@feature/GHA-0001-initial-release
+        with:
+          artifact-path: './artifacts/deployment.json'
+
+      - name: Print the Deployment Parameters
+        id: print-params
+        shell: bash
+        run: |
+          echo "📋 CloudFormation Deployment Parameters Summary"
+          echo "=============================================="
+          echo "Stack Name: ${{ steps.read-params.outputs.stack-name }}"
+          echo "Template Path: ${{ steps.read-params.outputs.template-path }}"
+
+      - name: CloudFormation Delete Stack
+        run: |
+          echo "CloudFormation Delete Stack"
+          echo "Deleting Stack: $DEPLOYMENT_STACK_NAME"
             
   create-pull-request:
     name: 🚀 Create Pull Request
