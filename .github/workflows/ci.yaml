@@ -514,56 +514,22 @@ jobs:
           with:
             artifact-path: './artifacts/deployment.json'
 
-        - name: Debug Outputs
-          run: |
-            echo "Available outputs from read-params step:"
-            echo "${{ toJSON(steps.read-params.outputs) }}"
-
         - name: Print the Deployment Parameters
           id: print-params
           shell: bash
           run: |
             echo "📋 CloudFormation Deployment Parameters Summary"
             echo "=============================================="
-            echo "Stack Name: ${{ steps.read-params.outputs.stack-name }}"
+            echo "Stack Name: ${{ env.DEPLOYMENT_STACK_NAME }}"
             echo "Template Path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}"
             echo "Parameters: ${{ env.DEPLOYMENT_PARAMETERS }}"
             
-            # Store parameters in a variable for processing
-            PARAMS='${{ env.DEPLOYMENT_PARAMETERS }}'
-            echo "$PARAMS" > params.json
-            
-            echo "Parameters formatted:"
-            # Check if parameters are in CloudFormation format (array of objects) or simple key-value format
-            if [[ "$PARAMS" == "["* ]]; then
-              # CloudFormation format: [{"ParameterName":"key","ParameterValue":"value"}]
-              jq -r '.[] | "  \(.ParameterName) = \(.ParameterValue)"' params.json
-            else
-              # Simple key-value format: {"key":"value"}
-              jq -r 'to_entries[] | "  \(.key) = \(.value)"' params.json
-            fi
-            
-            echo "=============================================="
-            
-            # Add to GitHub Step Summary
-            echo "## 📋 CloudFormation Deployment Parameters" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Stack Name:** \`${{ env.DEPLOYMENT_STACK_NAME }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Template Path:** \`${{ env.DEPLOYMENT_TEMPLATE_PATH }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Parameters:**" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
-            cat params.json | jq . >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            
-        # - name: Deploy CloudFormation Stack
-        #   uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@feature/GHA-0001-initial-release
-        #   with: 
-        #     stack-name: ${{ steps.read-params.outputs.stack-name }}
-        #     stack-path: ${{ steps.read-params.outputs.template-path }}
-        #     deployment-parameters: ${{ steps.read-params.outputs.parameters }} 
+        - name: Deploy CloudFormation Stack
+          uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@feature/GHA-0001-initial-release
+          with: 
+            stack-name: ${{ steps.read-params.outputs.stack-name }}
+            template-path: ${{ steps.read-params.outputs.template-path }}
+            deployment-parameters: ${{ steps.read-params.outputs.parameters }} 
 
   cloudformation-delete:
     if: ${{ needs.cloudformation-create.result == 'success' }}
