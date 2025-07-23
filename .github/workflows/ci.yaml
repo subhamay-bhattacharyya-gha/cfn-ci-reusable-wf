@@ -514,6 +514,11 @@ jobs:
           with:
             artifact-path: './artifacts/deployment.json'
 
+        - name: Debug Outputs
+          run: |
+            echo "Available outputs from read-params step:"
+            echo "${{ toJSON(steps.read-params.outputs) }}"
+
         - name: Print the Deployment Parameters
           id: print-params
           shell: bash
