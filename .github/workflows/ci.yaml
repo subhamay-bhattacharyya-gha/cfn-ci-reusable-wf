@@ -498,9 +498,9 @@ jobs:
             echo "Stack Name: ${{ env.DEPLOYMENT_STACK_NAME }}"
 
       - name: CloudFormation Delete Stack
-        run: |
-          echo "CloudFormation Delete Stack"
-          echo "Deleting Stack: ${{ steps.read-params.outputs.stack-name }}"
+        uses: subhamay-bhattacharyya-gha/cfn-delete-stack-action@main
+        with:
+          stack-name: ${{ env.DEPLOYMENT_STACK_NAME }}
             
   create-pull-request:
     name: 🚀 Create Pull Request
