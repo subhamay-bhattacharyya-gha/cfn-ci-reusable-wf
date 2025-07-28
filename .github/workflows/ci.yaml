@@ -457,7 +457,7 @@ jobs:
             echo "Parameters: ${{ env.DEPLOYMENT_PARAMETERS }}"
             
         - name: Deploy CloudFormation Stack
-          uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@feature/GHA-0001-initial-release
+          uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@main
           with: 
             stack-name: ${{ env.DEPLOYMENT_STACK_NAME }}
             template-path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}
