@@ -498,7 +498,7 @@ jobs:
             echo "Stack Name: ${{ env.DEPLOYMENT_STACK_NAME }}"
 
       - name: CloudFormation Delete Stack
-        uses: subhamay-bhattacharyya-gha/cfn-delete-stack-action@main
+        uses: subhamay-bhattacharyya-gha/cfn-delete-stack-action@feature/GHA-0001-initial-release
         with:
           stack-name: ${{ env.DEPLOYMENT_STACK_NAME }}
             
