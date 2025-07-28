@@ -489,14 +489,6 @@ jobs:
         with:
           artifact-path: './artifacts/deployment.json'
 
-      - name: Print the Deployment Parameters
-        id: print-params
-        shell: bash
-        run: |
-            echo "📋 CloudFormation Deployment Parameters Summary"
-            echo "=============================================="
-            echo "Stack Name: ${{ env.DEPLOYMENT_STACK_NAME }}"
-
       - name: CloudFormation Delete Stack
         uses: subhamay-bhattacharyya-gha/cfn-delete-stack-action@feature/GHA-0001-initial-release
         with:
