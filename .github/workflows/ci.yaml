@@ -490,7 +490,7 @@ jobs:
           artifact-path: './artifacts/deployment.json'
 
       - name: CloudFormation Delete Stack
-        uses: subhamay-bhattacharyya-gha/cfn-delete-stack-action@feature/GHA-0001-initial-release
+        uses: subhamay-bhattacharyya-gha/cfn-delete-stack-action@main
         with:
           stack-name: ${{ env.DEPLOYMENT_STACK_NAME }}
           aws-region: ${{ vars.AWS_REGION }}
