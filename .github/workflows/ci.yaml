@@ -442,7 +442,7 @@ jobs:
 
         - name: Read Deployment Parameters
           id: read-params
-          uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@feature/GHA-0001-initial-release
+          uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@main
           with:
             artifact-path: './artifacts/deployment.json'
 
@@ -485,7 +485,7 @@ jobs:
 
       - name: Read Deployment Parameters
         id: read-params
-        uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@feature/GHA-0001-initial-release
+        uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@main
         with:
           artifact-path: './artifacts/deployment.json'
 
