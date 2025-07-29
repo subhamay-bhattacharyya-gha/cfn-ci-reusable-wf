@@ -417,7 +417,7 @@ jobs:
         uses: subhamay-bhattacharyya-gha/cfn-yor-action@feature/GHA-0001-initial-release
         id: yor-resource-tagging
         with:
-          cloudformation-dir: 'infrastructure/cloudformation'
+          cloudformation-dir: 'cfn'
           commit-changes: 'false'
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
