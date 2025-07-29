@@ -254,7 +254,7 @@ jobs:
           
       - name: Prepare CloudFormation Parameters
         id: prepare-params
-        uses: subhamay-bhattacharyya-gha/cfn-stack-params-action@feature/GHA-0001-initial-release
+        uses: subhamay-bhattacharyya-gha/cfn-stack-params-action@main
         with:
           cfn-directory: ${{ inputs.cfn-directory }}
           ci-build: ${{ inputs.ci-build }}
@@ -298,7 +298,7 @@ jobs:
           retention-days: 7
           
       - name: Run CloudFormation Lint
-        uses: subhamay-bhattacharyya-gha/cfn-lint-action@feature/GHA-0001-initial-release
+        uses: subhamay-bhattacharyya-gha/cfn-lint-action@main
         with:
           template-path: ${{ needs.execution-path.outputs.template-path }}
           
