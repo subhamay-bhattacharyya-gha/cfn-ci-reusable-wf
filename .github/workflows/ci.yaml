@@ -413,9 +413,13 @@ jobs:
     needs: [cloudformation-lint, cloudformation-validate, checkov-scan]
     steps:
             
-        - name: YOR Tagging
-          run: |
-            echo "YOR Tagging"
+      - name: Tag Infrastructure Templates
+        uses: subhamay-bhattacharyya-gha/cfn-yor-action@main
+        id: yor-resource-tagging
+        with:
+          cloudformation-dir: 'infrastructure/cloudformation'
+          commit-changes: 'false'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   cloudformation-create:
     if: ${{ needs.yor-resource-tagging.result == 'success' }}
