@@ -222,14 +222,22 @@ jobs:
       #       exit 1
       #     fi
           
-      - name: Validate CloudFormation Templates
-        uses: subhamay-bhattacharyya-gha/cfn-validate-action@feature/GHA-0001-initial-release
+      - name: Prepare CloudFormation Parameters
+        id: prepare-params
+        uses: subhamay-bhattacharyya-gha/cfn-stack-params-action@main
         with:
-          aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
-          cloudformation-dir: ${{ inputs.cfn-directory }}
-          template-file: $TEMPLATE_PATH
-          parameters-file: ${{ steps.prepare-params.outputs.parameters }}
-          aws-region: ${{ vars.AWS_REGION }}
+          cfn-directory: ${{ inputs.cfn-directory }}
+          ci-build: ${{ inputs.ci-build }}
+          environment: 'ci'
+
+      # - name: Validate CloudFormation Templates
+      #   uses: subhamay-bhattacharyya-gha/cfn-validate-action@feature/GHA-0001-initial-release
+      #   with:
+      #     aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
+      #     cloudformation-dir: ${{ inputs.cfn-directory }}
+      #     template-file: $TEMPLATE_PATH
+      #     parameters-file: ${{ steps.prepare-params.outputs.parameters }}
+      #     aws-region: ${{ vars.AWS_REGION }}
 
   # cloudformation-lint:
   #   if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
