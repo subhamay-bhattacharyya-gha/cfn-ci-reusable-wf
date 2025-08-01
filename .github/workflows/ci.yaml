@@ -217,35 +217,11 @@ jobs:
           ci-build: ${{ inputs.ci-build }}
           environment: 'ci'
 
-      - name: Print Job Outputs
+      - name: Print Stack Name
         run: |
-          echo "Prepare CloudFormation Parameters Job Outputs:"
-          echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
+          echo "Stack name:"
           echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
           
-          # # Create params directory if it doesn't exist
-          # PARAMS_DIR="${{ github.workspace }}/${{ inputs.cfn-directory }}/params"
-          # mkdir -p "$PARAMS_DIR"
-          
-      # - name: Create Deployment JSON File
-      #   id: create-deployment-json
-      #   run: |
-      #     echo "Creating deployment JSON file..."
-          
-      #     # Create directory for artifacts
-      #     mkdir -p artifacts
-          
-      #     # Create JSON file with parameters, stack-name, and template-path
-      #     cat > artifacts/deployment.json << EOF
-      #     {
-      #       "parameters": ${{ steps.prepare-params.outputs.parameters }},
-      #       "stack-name": "${{ steps.prepare-params.outputs.stack-name }}",
-      #       "template-path": "${{ needs.execution-path.outputs.template-path }}"
-      #     }
-      #     EOF
-          
-      #     echo "✅ Created deployment.json:"
-      #     cat artifacts/deployment.json
       - name: Validate CloudFormation Templates
         uses: subhamay-bhattacharyya-gha/cfn-validate-action@feature/GHA-0001-initial-release
         with:
@@ -254,34 +230,24 @@ jobs:
           template-file: ${{ needs.execution-path.outputs.template-path }}
           aws-region: ${{ vars.AWS_REGION }}
 
-  # cloudformation-lint:
-  #   if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
-  #   name: 📋 CloudFormation Lint
-  #   runs-on: ubuntu-latest
-  #   needs: [execution-path]
+  cloudformation-lint:
+    if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
+    name: 📋 CloudFormation Lint
+    runs-on: ubuntu-latest
+    needs: [execution-path]
 
-  #   steps:
-  #     - name: Checkout Code
-  #       uses: actions/checkout@v4
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
         
-  #     - name: Setup Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: '3.x'
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
           
-  #     - name: Install cfn-lint
-  #       run: |
-  #         pip install cfn-lint
-          
-  #     - name: Prepare CloudFormation Parameters
-  #       id: prepare-params
-  #       uses: subhamay-bhattacharyya-gha/cfn-stack-params-action@main
-  #       with:
-  #         cfn-directory: ${{ inputs.cfn-directory }}
-  #         ci-build: ${{ inputs.ci-build }}
-  #         environment: 'ci'
-          
-
+      - name: Install cfn-lint
+        run: |
+          pip install cfn-lint
           
   #     - name: Upload Deployment JSON as Artifact
   #       uses: actions/upload-artifact@v4
@@ -289,114 +255,87 @@ jobs:
   #         name: deployment-parameters
   #         path: artifacts/deployment.json
   #         retention-days: 7
+      - name: Run CloudFormation Lint
+        uses: subhamay-bhattacharyya-gha/cfn-lint-action@main
+        with:
+          template-path: ${{ needs.execution-path.outputs.template-path }}
           
-  #     - name: Run CloudFormation Lint
-  #       uses: subhamay-bhattacharyya-gha/cfn-lint-action@main
-  #       with:
-  #         template-path: ${{ needs.execution-path.outputs.template-path }}
+  checkov-scan:
+    if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
+    name: 🧳 Checkov Scan
+    runs-on: ubuntu-latest
+    needs: [execution-path]
+    environment: ${{ inputs.environment }}
+
+    steps:
+        - name: Checkout Code
+          uses: actions/checkout@v4
           
-  #     - name: Display Prepared Parameters
-  #       run: |
-  #         echo "## 📋 CloudFormation Parameters" >> $GITHUB_STEP_SUMMARY
-  #         echo "" >> $GITHUB_STEP_SUMMARY
-  #         echo "**Parameters File:** \`${{ inputs.cfn-directory }}/parameters.json\`" >> $GITHUB_STEP_SUMMARY
-  #         echo "" >> $GITHUB_STEP_SUMMARY
-          
-  #         if [ -n "${{ steps.prepare-params.outputs.parameters }}" ]; then
-  #           echo "### Prepared Parameters:" >> $GITHUB_STEP_SUMMARY
-  #           echo "" >> $GITHUB_STEP_SUMMARY
-  #           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
-  #           echo '${{ steps.prepare-params.outputs.parameters }}' | jq . >> $GITHUB_STEP_SUMMARY
-  #           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: ${{ secrets.aws-role-arn }}
+            aws-region: ${{ vars.AWS_REGION }}
+
+        - name: Checkov Scan
+          uses: subhamay-bhattacharyya-gha/checkov-scan-action@main
+          id: checkov-scan
+          with:
+            iac-dir: ${{ inputs.cfn-directory }}
+            iac-framework: cloudformation
+            soft-fail: true
             
-  #           echo "✅ CloudFormation parameters prepared successfully"
-  #           echo "Prepared parameters:"
-  #           echo "${{ steps.prepare-params.outputs.parameters }}"
-  #         else
-  #           echo "### ⚠️ No Parameters Found" >> $GITHUB_STEP_SUMMARY
-  #           echo "" >> $GITHUB_STEP_SUMMARY
-  #           echo "No parameters were found or prepared from the parameters file." >> $GITHUB_STEP_SUMMARY
-            
-  #           echo "⚠️ No parameters found in the parameters file"
-  #         fi
+        - name: Confirm SARIF file type
+          shell: bash
+          run: |
+            ls -la "${{ github.workspace }}"
+            file "${{ github.workspace }}/results.sarif"
 
-  # checkov-scan:
-  #   if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
-  #   name: 🧳 Checkov Scan
-  #   runs-on: ubuntu-latest
-  #   needs: [execution-path]
-  #   environment: ${{ inputs.environment }}
+        - name: "📋 Summarize and Print Checkov Scan Report with Snippets"
+          id: summarize-report
+          uses: subhamay-bhattacharyya-gha/checkov-report-action@main
 
-  #   steps:
-  #       - name: Checkout Code
-  #         uses: actions/checkout@v4
-          
-          
-  #       - name: Configure AWS Credentials
-  #         uses: aws-actions/configure-aws-credentials@v4
-  #         with:
-  #           role-to-assume: ${{ secrets.aws-role-arn }}
-  #           aws-region: ${{ vars.AWS_REGION }}
+  build-lambda:
+    name: 🛠️ ⛔ Lambda Package
+    if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).lambda == true }}
+    runs-on: ubuntu-latest
+    needs: [execution-path, detect-services, detect-changes]
+    steps:
+      - name: Build and Upload Lambda Package
+        run: echo "Uploading Lambda package..."
 
-  #       - name: Checkov Scan
-  #         uses: subhamay-bhattacharyya-gha/checkov-scan-action@main
-  #         id: checkov-scan
-  #         with:
-  #           iac-dir: ${{ inputs.cfn-directory }}
-  #           iac-framework: cloudformation
-  #           soft-fail: true
-            
-  #       - name: Confirm SARIF file type
-  #         shell: bash
-  #         run: |
-  #           ls -la "${{ github.workspace }}"
-  #           file "${{ github.workspace }}/results.sarif"
+  build-lambda-layer:
+    name: 🛠️ ⛔ Lambda Layer
+    if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path)['lambda-layer'] == true }}
+    runs-on: ubuntu-latest
+    needs: [execution-path, detect-services, detect-changes]
+    steps:
+      - name: Build Lambda Layer Package
+        run: echo "No changes in Lambda layer package, skipping build..."
+      - name: Build and Upload Lambda Layer Package
+        run: echo "Build and Upload Lambda layer...."
 
-  #       - name: "📋 Summarize and Print Checkov Scan Report with Snippets"
-  #         id: summarize-report
-  #         uses: subhamay-bhattacharyya-gha/checkov-report-action@main
+  build-glue:
+    name: 🛠️ ⛔ Glue Script
+    if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).glue == true }}
+    runs-on: ubuntu-latest
+    needs: [execution-path, detect-services, detect-changes]
+    steps:
+      - name: Package Glue Script
+        run: echo "No changes found in Glue script, skipping build..."
+      - name: Package and Upload Glue Script
+        run: echo "Uploading Glue script..."
 
-  # build-lambda:
-  #   name: 🛠️ ⛔ Lambda Package
-  #   if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).lambda == true }}
-  #   runs-on: ubuntu-latest
-  #   needs: [execution-path, detect-services, detect-changes]
-  #   steps:
-  #     - name: Build and Upload Lambda Package
-  #       run: echo "Uploading Lambda package..."
-
-  # build-lambda-layer:
-  #   name: 🛠️ ⛔ Lambda Layer
-  #   if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path)['lambda-layer'] == true }}
-  #   runs-on: ubuntu-latest
-  #   needs: [execution-path, detect-services, detect-changes]
-  #   steps:
-  #     - name: Build Lambda Layer Package
-  #       run: echo "No changes in Lambda layer package, skipping build..."
-  #     - name: Build and Upload Lambda Layer Package
-  #       run: echo "Build and Upload Lambda layer...."
-
-  # build-glue:
-  #   name: 🛠️ ⛔ Glue Script
-  #   if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).glue == true }}
-  #   runs-on: ubuntu-latest
-  #   needs: [execution-path, detect-services, detect-changes]
-  #   steps:
-  #     - name: Package Glue Script
-  #       run: echo "No changes found in Glue script, skipping build..."
-  #     - name: Package and Upload Glue Script
-  #       run: echo "Uploading Glue script..."
-
-  # build-state-machine:
-  #   name: 🛠️ ⛔ State Machine
-  #   if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path)['state-machine'] == true }}
-  #   runs-on: ubuntu-latest
-  #   needs: [execution-path, detect-services, detect-changes]
-  #   steps:
-  #     - name: Package State Machine
-  #       run: echo "No changes in State Machine, skipping build."
-  #     - name: Upload State Machine ASL
-  #       run: echo "Uploading State Machine ASL..."
+  build-state-machine:
+    name: 🛠️ ⛔ State Machine
+    if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path)['state-machine'] == true }}
+    runs-on: ubuntu-latest
+    needs: [execution-path, detect-services, detect-changes]
+    steps:
+      - name: Package State Machine
+        run: echo "No changes in State Machine, skipping build."
+      - name: Upload State Machine ASL
+        run: echo "Uploading State Machine ASL..."
 
   # yor-resource-tagging:
   #   name: 📋 Apply Git Metadata Tags using YOR
