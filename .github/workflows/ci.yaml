@@ -230,35 +230,35 @@ jobs:
           ci-build: ${{ inputs.ci-build }}
           environment: 'ci'
 
-      - name: Print Job Outputs
-        run: |
-          echo "�  CloudFormation Lint Job Outputs:"
-          echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
-          echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
+      # - name: Print Job Outputs
+      #   run: |
+      #     echo "�  CloudFormation Lint Job Outputs:"
+      #     echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
+      #     echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
           
-          # Create params directory if it doesn't exist
-          PARAMS_DIR="${{ github.workspace }}/${{ inputs.cfn-directory }}/params"
-          mkdir -p "$PARAMS_DIR"
+      #     # Create params directory if it doesn't exist
+      #     PARAMS_DIR="${{ github.workspace }}/${{ inputs.cfn-directory }}/params"
+      #     mkdir -p "$PARAMS_DIR"
           
-      - name: Create Deployment JSON File
-        id: create-deployment-json
-        run: |
-          echo "Creating deployment JSON file..."
+      # - name: Create Deployment JSON File
+      #   id: create-deployment-json
+      #   run: |
+      #     echo "Creating deployment JSON file..."
           
-          # Create directory for artifacts
-          mkdir -p artifacts
+      #     # Create directory for artifacts
+      #     mkdir -p artifacts
           
-          # Create JSON file with parameters, stack-name, and template-path
-          cat > artifacts/deployment.json << EOF
-          {
-            "parameters": ${{ steps.prepare-params.outputs.parameters }},
-            "stack-name": "${{ steps.prepare-params.outputs.stack-name }}",
-            "template-path": "${{ needs.execution-path.outputs.template-path }}"
-          }
-          EOF
+      #     # Create JSON file with parameters, stack-name, and template-path
+      #     cat > artifacts/deployment.json << EOF
+      #     {
+      #       "parameters": ${{ steps.prepare-params.outputs.parameters }},
+      #       "stack-name": "${{ steps.prepare-params.outputs.stack-name }}",
+      #       "template-path": "${{ needs.execution-path.outputs.template-path }}"
+      #     }
+      #     EOF
           
-          echo "✅ Created deployment.json:"
-          cat artifacts/deployment.json
+      #     echo "✅ Created deployment.json:"
+      #     cat artifacts/deployment.json
       # - name: Validate CloudFormation Templates
       #   uses: subhamay-bhattacharyya-gha/cfn-validate-action@feature/GHA-0001-initial-release
       #   with:
