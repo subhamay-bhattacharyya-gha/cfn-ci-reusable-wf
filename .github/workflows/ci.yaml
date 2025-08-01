@@ -251,7 +251,7 @@ jobs:
         with:
           aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
           cloudformation-dir: ${{ inputs.cfn-directory }}
-          template-file: $TEMPLATE_PATH
+          template-file: ${{ needs.execution-path.outputs.template-path }}
           parameters: ${{ steps.prepare-params.outputs.parameters }}
           aws-region: ${{ vars.AWS_REGION }}
 
