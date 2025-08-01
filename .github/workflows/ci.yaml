@@ -219,7 +219,7 @@ jobs:
 
       - name: Print Job Outputs
         run: |
-          echo "�  CloudFormation Lint Job Outputs:"
+          echo "Prepare CloudFormation Parameters Job Outputs:"
           echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
           echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
           
@@ -252,7 +252,7 @@ jobs:
           aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
           cloudformation-dir: ${{ inputs.cfn-directory }}
           template-file: $TEMPLATE_PATH
-          parameters-file: ${{ steps.prepare-params.outputs.parameters }}
+          parameters: ${{ steps.prepare-params.outputs.parameters }}
           aws-region: ${{ vars.AWS_REGION }}
 
   # cloudformation-lint:
