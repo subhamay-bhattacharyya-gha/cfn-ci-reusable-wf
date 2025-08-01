@@ -209,19 +209,6 @@ jobs:
           role-session-name: cloudformation-validation-${{ github.run_id }}
           aws-region: ${{ vars.AWS_REGION }}
           
-      # - name: Validate CloudFormation Template
-      #   run: |
-      #     # Use template path from execution-path job
-      #     TEMPLATE_PATH="${{ needs.execution-path.outputs.template-path }}"
-      #     TEMPLATE_NAME=$(basename "$TEMPLATE_PATH")
-          
-      #     echo "🔍 Validating CloudFormation template: $TEMPLATE_NAME"
-          
-      #     if [ ! -f "$TEMPLATE_PATH" ]; then
-      #       echo "❌ Template file not found: $TEMPLATE_PATH"
-      #       exit 1
-      #     fi
-          
       - name: Prepare CloudFormation Parameters
         id: prepare-params
         uses: subhamay-bhattacharyya-gha/cfn-stack-params-action@feature/GHA-0009-add-step-to-print-the-out
@@ -230,15 +217,15 @@ jobs:
           ci-build: ${{ inputs.ci-build }}
           environment: 'ci'
 
-      # - name: Print Job Outputs
-      #   run: |
-      #     echo "�  CloudFormation Lint Job Outputs:"
-      #     echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
-      #     echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
+      - name: Print Job Outputs
+        run: |
+          echo "�  CloudFormation Lint Job Outputs:"
+          echo "Parameters: ${{ steps.prepare-params.outputs.parameters }}"
+          echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
           
-      #     # Create params directory if it doesn't exist
-      #     PARAMS_DIR="${{ github.workspace }}/${{ inputs.cfn-directory }}/params"
-      #     mkdir -p "$PARAMS_DIR"
+          # # Create params directory if it doesn't exist
+          # PARAMS_DIR="${{ github.workspace }}/${{ inputs.cfn-directory }}/params"
+          # mkdir -p "$PARAMS_DIR"
           
       # - name: Create Deployment JSON File
       #   id: create-deployment-json
@@ -259,14 +246,14 @@ jobs:
           
       #     echo "✅ Created deployment.json:"
       #     cat artifacts/deployment.json
-      # - name: Validate CloudFormation Templates
-      #   uses: subhamay-bhattacharyya-gha/cfn-validate-action@feature/GHA-0001-initial-release
-      #   with:
-      #     aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
-      #     cloudformation-dir: ${{ inputs.cfn-directory }}
-      #     template-file: $TEMPLATE_PATH
-      #     parameters-file: ${{ steps.prepare-params.outputs.parameters }}
-      #     aws-region: ${{ vars.AWS_REGION }}
+      - name: Validate CloudFormation Templates
+        uses: subhamay-bhattacharyya-gha/cfn-validate-action@feature/GHA-0001-initial-release
+        with:
+          aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
+          cloudformation-dir: ${{ inputs.cfn-directory }}
+          template-file: $TEMPLATE_PATH
+          parameters-file: ${{ steps.prepare-params.outputs.parameters }}
+          aws-region: ${{ vars.AWS_REGION }}
 
   # cloudformation-lint:
   #   if: ${{ needs.execution-path.result == 'success' && needs.execution-path.outputs.execution-path && fromJSON(needs.execution-path.outputs.execution-path).IaC == true }}
