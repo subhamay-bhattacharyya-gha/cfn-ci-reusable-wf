@@ -264,6 +264,7 @@ jobs:
           else
             echo "Stack Name (from prepared params): ${{ steps.prepare-params.outputs.stack-name }}"
           fi
+          echo "Template Path : ${{ needs.execution-path.outputs.template-path }}"
           
       - name: Validate CloudFormation Templates
         uses: subhamay-bhattacharyya-gha/cfn-validate-action@feature/GHA-0001-initial-release
