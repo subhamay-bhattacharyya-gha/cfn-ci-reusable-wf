@@ -409,7 +409,7 @@ jobs:
 
         - name: Read Deployment Parameters
           id: read-params
-          uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@main
+          uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@feature/GHA-0003-add-cloudformation-tags-o
           with:
             artifact-path: './artifacts/deployment.json'
 
@@ -423,11 +423,11 @@ jobs:
             echo "Template Path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}"
             echo "Parameters: ${{ env.DEPLOYMENT_PARAMETERS }}"
             
-            # Print tags from cloudformation-validate job
-            if [ "${{ needs.cloudformation-validate.outputs.tags }}" != "" ] && [ "${{ needs.cloudformation-validate.outputs.tags }}" != "null" ]; then
-              echo "Tags: ${{ needs.cloudformation-validate.outputs.tags }}"
+            # Print CloudFormation Tags from environment
+            if [ "${{ env.TAGS }}" != "" ] && [ "${{ env.TAGS }}" != "null" ]; then
+              echo "CloudFormation Tags: ${{ env.TAGS }}"
             else
-              echo "Tags: No tags available"
+              echo "CloudFormation Tags: No tags available"
             fi
             
         - name: Deploy CloudFormation Stack
@@ -436,7 +436,7 @@ jobs:
             stack-name: ${{ env.DEPLOYMENT_STACK_NAME }}
             template-path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}
             deployment-parameters: ${{ env.DEPLOYMENT_PARAMETERS }}
-            cloudformation-tags: ${{ needs.cloudformation-validate.outputs.tags }} 
+            cloudformation-tags: ${{ env.TAGS }} 
 
   cloudformation-delete:
     if: ${{ needs.cloudformation-create.result == 'success' }}
@@ -461,7 +461,7 @@ jobs:
 
       - name: Read Deployment Parameters
         id: read-params
-        uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@main
+        uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@feature/GHA-0003-add-cloudformation-tags-o
         with:
           artifact-path: './artifacts/deployment.json'
 
