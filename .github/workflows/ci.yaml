@@ -424,8 +424,8 @@ jobs:
             echo "Parameters: ${{ env.DEPLOYMENT_PARAMETERS }}"
             
             # Print CloudFormation Tags from step outputs
-            if [ "${{ steps.read-params.outputs.tags }}" != "" ] && [ "${{ steps.read-params.outputs.tags }}" != "null" ]; then
-              echo "CloudFormation Tags: ${{ steps.read-params.outputs.tags }}"
+            if [ "${{ steps.read-params.outputs.cloudformation-tags }}" != "" ] && [ "${{ steps.read-params.outputs.cloudformation-tags }}" != "null" ]; then
+              echo "CloudFormation Tags: ${{ steps.read-params.outputs.cloudformation-tags }}"
             else
               echo "CloudFormation Tags: No tags available"
             fi
@@ -436,7 +436,7 @@ jobs:
             stack-name: ${{ env.DEPLOYMENT_STACK_NAME }}
             template-path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}
             deployment-parameters: ${{ env.DEPLOYMENT_PARAMETERS }}
-            cloudformation-tags: ${{ steps.read-params.outputs.tags }} 
+            cloudformation-tags: ${{ steps.read-params.outputs.cloudformation-tags }} 
 
   cloudformation-delete:
     if: ${{ needs.cloudformation-create.result == 'success' }}
