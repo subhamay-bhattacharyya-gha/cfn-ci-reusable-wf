@@ -46,14 +46,17 @@ jobs:
     name: 🔎 Check Env
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    env:
+      ORG_SHORT_NAME: ${{ vars.ORG_SHORT_NAME || 'org' }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
     steps:
       - name: Check Available Environments
         id: check
         uses: subhamay-bhattacharyya-gha/check-environments-action@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          org-short-name: ${{ vars.ORG_SHORT_NAME != '' && vars.ORG_SHORT_NAME || 'org' }}
-          region: ${{ vars.AWS_REGION != '' && vars.AWS_REGION || 'us-east-1' }}
+          org-short-name: ${{ env.ORG_SHORT_NAME }}
+          region: ${{ env.AWS_REGION }}
 
   check-branch-issue:
     name: 🔎 Check Branch
@@ -198,6 +201,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: [execution-path]
+    outputs:
+      tags: ${{ steps.check-artifact.outcome == 'success' && steps.read-existing-params.outputs.tags || steps.prepare-params.outputs.tags }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -241,16 +246,19 @@ jobs:
             PARAMETERS=$(jq -c '.parameters' ./artifacts/deployment.json)
             STACK_NAME=$(jq -r '."stack-name"' ./artifacts/deployment.json)
             TEMPLATE_PATH=$(jq -r '."template-path"' ./artifacts/deployment.json)
+            TAGS=$(jq -c '.tags // {}' ./artifacts/deployment.json)
             
             echo "📋 Extracted Parameters from existing artifact:"
             echo "Parameters: $PARAMETERS"
             echo "Stack Name: $STACK_NAME"
             echo "Template Path: $TEMPLATE_PATH"
+            echo "Tags: $TAGS"
             
             # Set as step outputs to match prepare-params outputs
             echo "parameters=$PARAMETERS" >> $GITHUB_OUTPUT
             echo "stack-name=$STACK_NAME" >> $GITHUB_OUTPUT
             echo "template-path=$TEMPLATE_PATH" >> $GITHUB_OUTPUT
+            echo "tags=$TAGS" >> $GITHUB_OUTPUT
           else
             echo "❌ deployment.json file not found in artifact"
             exit 1
@@ -292,13 +300,7 @@ jobs:
       - name: Install cfn-lint
         run: |
           pip install cfn-lint
-          
-  #     - name: Upload Deployment JSON as Artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: deployment-parameters
-  #         path: artifacts/deployment.json
-  #         retention-days: 7
+
       - name: Run CloudFormation Lint
         uses: subhamay-bhattacharyya-gha/cfn-lint-action@main
         with:
@@ -421,12 +423,20 @@ jobs:
             echo "Template Path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}"
             echo "Parameters: ${{ env.DEPLOYMENT_PARAMETERS }}"
             
+            # Print tags from cloudformation-validate job
+            if [ "${{ needs.cloudformation-validate.outputs.tags }}" != "" ] && [ "${{ needs.cloudformation-validate.outputs.tags }}" != "null" ]; then
+              echo "Tags: ${{ needs.cloudformation-validate.outputs.tags }}"
+            else
+              echo "Tags: No tags available"
+            fi
+            
         - name: Deploy CloudFormation Stack
-          uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@main
+          uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@feature/GHA-0003-add-tags-to-cloudformatio
           with: 
             stack-name: ${{ env.DEPLOYMENT_STACK_NAME }}
             template-path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}
-            deployment-parameters: ${{ env.DEPLOYMENT_PARAMETERS }} 
+            deployment-parameters: ${{ env.DEPLOYMENT_PARAMETERS }}
+            cloudformation-tags: ${{ needs.cloudformation-validate.outputs.tags }} 
 
   cloudformation-delete:
     if: ${{ needs.cloudformation-create.result == 'success' }}

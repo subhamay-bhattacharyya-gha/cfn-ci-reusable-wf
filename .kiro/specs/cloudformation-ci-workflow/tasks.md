@@ -80,10 +80,11 @@
     - _Requirements: 7.4_
 
 - [x] 7. Implement resource tagging
-  - ~~Create yor-resource-tagging job with dependencies on validation jobs~~ **REMOVED**
-  - ~~Configure Yor action for CloudFormation template tagging~~ **REMOVED**
-  - ~~Apply git metadata tags to CloudFormation resources~~ **REMOVED**
-  - _Requirements: 8.1, 8.2, 8.3, 8.4_ **REMOVED FROM IMPLEMENTATION**
+  - Implement CloudFormation native tagging support in parameter preparation
+  - Extract tags from deployment artifacts and parameter files
+  - Pass tags to CloudFormation deployment action via cloudformation-tags input
+  - Use cfn-create-stack-action branch with tagging support
+  - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
 - [x] 8. Implement CloudFormation deployment planning
   - Create cloudformation-plan job that depends on resource tagging

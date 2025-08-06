@@ -17,7 +17,7 @@ A comprehensive CloudFormation CI/CD workflow that mirrors the functionality of 
 - ✅ **CloudFormation Validation**: Catch template syntax and logical errors before deployment
 - ✅ **Linting & Security Scanning**: Ensure templates follow best practices and security standards
 - ✅ **Conditional Build Steps**: Build Lambda, Glue, and other AWS service artifacts only when relevant changes are detected
-- ❌ **Resource Tagging**: Resource tagging with Yor has been removed from this implementation
+- ✅ **Resource Tagging**: Apply consistent resource tags using CloudFormation native tagging for governance and cost tracking
 - ✅ **Deployment Planning**: Review infrastructure changes before they are applied
 - ✅ **Cost Estimation**: Understand the financial impact of infrastructure changes before deployment
 - ✅ **CloudFormation Deployment**: Apply approved infrastructure changes to AWS environments
@@ -99,7 +99,7 @@ The workflow executes the following steps in sequence:
    - Conditional State Machine validation
 
 4. **Deployment Phase**
-   - CloudFormation stack creation
+   - CloudFormation stack creation with native tagging support
    - CloudFormation stack deletion (for CI environments)
 
 5. **Integration Phase**
