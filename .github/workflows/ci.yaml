@@ -208,19 +208,62 @@ jobs:
           role-to-assume: ${{ secrets.aws-role-arn }}
           role-session-name: cloudformation-validation-${{ github.run_id }}
           aws-region: ${{ vars.AWS_REGION }}
-          
+
+      - name: Check for Existing Deployment Parameters Artifact
+        id: check-artifact
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-parameters
+          path: ./artifacts
+
       - name: Prepare CloudFormation Parameters
         id: prepare-params
+        if: steps.check-artifact.outcome == 'failure'
         uses: subhamay-bhattacharyya-gha/cfn-stack-params-action@feature/GHA-0009-add-step-to-print-the-out
         with:
           cfn-directory: ${{ inputs.cfn-directory }}
           ci-build: ${{ inputs.ci-build }}
           environment: 'ci'
 
+      - name: Read Existing Deployment Parameters
+        id: read-existing-params
+        if: steps.check-artifact.outcome == 'success'
+        shell: bash
+        run: |
+          echo "📋 Using existing deployment parameters from artifact..."
+          
+          if [ -f "./artifacts/deployment.json" ]; then
+            echo "✅ Found existing deployment.json file"
+            cat ./artifacts/deployment.json
+            
+            # Extract values from JSON
+            PARAMETERS=$(jq -c '.parameters' ./artifacts/deployment.json)
+            STACK_NAME=$(jq -r '."stack-name"' ./artifacts/deployment.json)
+            TEMPLATE_PATH=$(jq -r '."template-path"' ./artifacts/deployment.json)
+            
+            echo "📋 Extracted Parameters from existing artifact:"
+            echo "Parameters: $PARAMETERS"
+            echo "Stack Name: $STACK_NAME"
+            echo "Template Path: $TEMPLATE_PATH"
+            
+            # Set as step outputs to match prepare-params outputs
+            echo "parameters=$PARAMETERS" >> $GITHUB_OUTPUT
+            echo "stack-name=$STACK_NAME" >> $GITHUB_OUTPUT
+            echo "template-path=$TEMPLATE_PATH" >> $GITHUB_OUTPUT
+          else
+            echo "❌ deployment.json file not found in artifact"
+            exit 1
+          fi
+
       - name: Print Stack Name
         run: |
           echo "Stack name:"
-          echo "Stack Name: ${{ steps.prepare-params.outputs.stack-name }}"
+          if [ "${{ steps.check-artifact.outcome }}" == "success" ]; then
+            echo "Stack Name (from existing artifact): ${{ steps.read-existing-params.outputs.stack-name }}"
+          else
+            echo "Stack Name (from prepared params): ${{ steps.prepare-params.outputs.stack-name }}"
+          fi
           
       - name: Validate CloudFormation Templates
         uses: subhamay-bhattacharyya-gha/cfn-validate-action@feature/GHA-0001-initial-release
@@ -337,130 +380,112 @@ jobs:
       - name: Upload State Machine ASL
         run: echo "Uploading State Machine ASL..."
 
-  # yor-resource-tagging:
-  #   name: 📋 Apply Git Metadata Tags using YOR
-  #   if: ${{ needs.cloudformation-lint.result == 'success' && needs.cloudformation-validate.result == 'success' && needs.checkov-scan.result == 'success' }}
-  #   runs-on: ubuntu-latest
-  #   environment: ${{ inputs.environment }}
-  #   needs: [cloudformation-lint, cloudformation-validate, checkov-scan]
-  #   steps:
-            
-  #     - name: Tag Infrastructure Templates
-  #       uses: subhamay-bhattacharyya-gha/cfn-yor-action@feature/GHA-0001-initial-release
-  #       id: yor-resource-tagging
-  #       with:
-  #         cloudformation-dir: 'cfn'
-  #         commit-changes: 'false'
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  cloudformation-create:
+    if: ${{ needs.cloudformation-lint.result == 'success' && needs.cloudformation-validate.result == 'success' && needs.checkov-scan.result == 'success' }}
+    name: 🚧 CloudFormation Create Stack
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    needs: [cloudformation-lint, cloudformation-validate, checkov-scan]
 
-  # cloudformation-create:
-  #   if: ${{ needs.yor-resource-tagging.result == 'success' }}
-  #   name: 🚧 CloudFormation Create Stack
-  #   runs-on: ubuntu-latest
-  #   environment: ${{ inputs.environment }}
-  #   needs: [yor-resource-tagging]
-
-  #   steps:
-  #       - name: Checkout Code
-  #         uses: actions/checkout@v4
+    steps:
+        - name: Checkout Code
+          uses: actions/checkout@v4
           
-  #       - name: Download Deployment Parameters Artifact
-  #         uses: actions/download-artifact@v4
-  #         with:
-  #           name: deployment-parameters
-  #           path: ./artifacts
+        - name: Download Deployment Parameters Artifact
+          uses: actions/download-artifact@v4
+          with:
+            name: deployment-parameters
+            path: ./artifacts
             
-  #       - name: Configure AWS Credentials
-  #         uses: aws-actions/configure-aws-credentials@v4
-  #         with:
-  #           role-to-assume: ${{ secrets.aws-role-arn }}
-  #           role-session-name: cloudformation-create-${{ github.run_id }}
-  #           aws-region: ${{ vars.AWS_REGION }}
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: ${{ secrets.aws-role-arn }}
+            role-session-name: cloudformation-create-${{ github.run_id }}
+            aws-region: ${{ vars.AWS_REGION }}
 
-  #       - name: Read Deployment Parameters
-  #         id: read-params
-  #         uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@main
-  #         with:
-  #           artifact-path: './artifacts/deployment.json'
+        - name: Read Deployment Parameters
+          id: read-params
+          uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@main
+          with:
+            artifact-path: './artifacts/deployment.json'
 
-  #       - name: Print the Deployment Parameters
-  #         id: print-params
-  #         shell: bash
-  #         run: |
-  #           echo "📋 CloudFormation Deployment Parameters Summary"
-  #           echo "=============================================="
-  #           echo "Stack Name: ${{ env.DEPLOYMENT_STACK_NAME }}"
-  #           echo "Template Path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}"
-  #           echo "Parameters: ${{ env.DEPLOYMENT_PARAMETERS }}"
+        - name: Print the Deployment Parameters
+          id: print-params
+          shell: bash
+          run: |
+            echo "📋 CloudFormation Deployment Parameters Summary"
+            echo "=============================================="
+            echo "Stack Name: ${{ env.DEPLOYMENT_STACK_NAME }}"
+            echo "Template Path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}"
+            echo "Parameters: ${{ env.DEPLOYMENT_PARAMETERS }}"
             
-  #       - name: Deploy CloudFormation Stack
-  #         uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@main
-  #         with: 
-  #           stack-name: ${{ env.DEPLOYMENT_STACK_NAME }}
-  #           template-path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}
-  #           deployment-parameters: ${{ env.DEPLOYMENT_PARAMETERS }} 
+        - name: Deploy CloudFormation Stack
+          uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@main
+          with: 
+            stack-name: ${{ env.DEPLOYMENT_STACK_NAME }}
+            template-path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}
+            deployment-parameters: ${{ env.DEPLOYMENT_PARAMETERS }} 
 
-  # cloudformation-delete:
-  #   if: ${{ needs.cloudformation-create.result == 'success' }}
-  #   name: ✂️ CloudFormation Destroy
-  #   runs-on: ubuntu-latest
-  #   environment: ${{ inputs.environment }}
-  #   needs: [cloudformation-create]
+  cloudformation-delete:
+    if: ${{ needs.cloudformation-create.result == 'success' }}
+    name: ✂️ CloudFormation Destroy
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    needs: [cloudformation-create]
 
-  #   steps:
-  #     - name: Download Deployment Parameters Artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: deployment-parameters
-  #         path: ./artifacts
+    steps:
+      - name: Download Deployment Parameters Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-parameters
+          path: ./artifacts
         
-  #     - name: Configure AWS Credentials
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         role-to-assume: ${{ secrets.aws-role-arn }}
-  #         role-session-name: cloudformation-delete-${{ github.run_id }}
-  #         aws-region: ${{ vars.AWS_REGION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.aws-role-arn }}
+          role-session-name: cloudformation-delete-${{ github.run_id }}
+          aws-region: ${{ vars.AWS_REGION }}
 
-  #     - name: Read Deployment Parameters
-  #       id: read-params
-  #       uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@main
-  #       with:
-  #         artifact-path: './artifacts/deployment.json'
+      - name: Read Deployment Parameters
+        id: read-params
+        uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@main
+        with:
+          artifact-path: './artifacts/deployment.json'
 
-  #     - name: CloudFormation Delete Stack
-  #       uses: subhamay-bhattacharyya-gha/cfn-delete-stack-action@main
-  #       with:
-  #         stack-name: ${{ env.DEPLOYMENT_STACK_NAME }}
-  #         aws-region: ${{ vars.AWS_REGION }}
+      - name: CloudFormation Delete Stack
+        uses: subhamay-bhattacharyya-gha/cfn-delete-stack-action@main
+        with:
+          stack-name: ${{ env.DEPLOYMENT_STACK_NAME }}
+          aws-region: ${{ vars.AWS_REGION }}
             
-  # create-pull-request:
-  #   name: 🚀 Create Pull Request
-  #   runs-on: ubuntu-latest
-  #   needs:
-  #     - cloudformation-lint
-  #     - cloudformation-validate
-  #     - cloudformation-create
-  #     - cloudformation-delete
-  #     - yor-resource-tagging
-  #     - checkov-scan
-  #     - build-lambda
-  #     - build-lambda-layer
-  #     - build-glue
-  #     - build-state-machine
-  #   if: >-
-  #     ${{
-  #       always() &&
-  #       needs.cloudformation-lint.result != 'failure' &&
-  #       needs.cloudformation-validate.result != 'failure' &&
-  #       needs.cloudformation-create.result != 'failure' &&
-  #       needs.cloudformation-delete.result != 'failure' &&
-  #       needs.yor-resource-tagging.result != 'failure' &&
-  #       needs.checkov-scan.result != 'failure' &&
-  #       needs.build-lambda.result != 'failure' &&
-  #       needs.build-lambda-layer.result != 'failure' &&
-  #       needs.build-glue.result != 'failure' &&
-  #       needs.build-state-machine.result != 'failure'
-  #     }}
-  #   steps:
-  #     - name: Create Pull Request
-  #       run: echo "Create pull request manually..."
+  create-pull-request:
+    name: 🚀 Create Pull Request
+    runs-on: ubuntu-latest
+    needs:
+      - cloudformation-lint
+      - cloudformation-validate
+      - cloudformation-create
+      - cloudformation-delete
+      - checkov-scan
+      - build-lambda
+      - build-lambda-layer
+      - build-glue
+      - build-state-machine
+    if: >-
+      ${{
+        always() &&
+        needs.cloudformation-lint.result != 'failure' &&
+        needs.cloudformation-validate.result != 'failure' &&
+        needs.cloudformation-create.result != 'failure' &&
+        needs.cloudformation-delete.result != 'failure' &&
+        needs.checkov-scan.result != 'failure' &&
+        needs.build-lambda.result != 'failure' &&
+        needs.build-lambda-layer.result != 'failure' &&
+        needs.build-glue.result != 'failure' &&
+        needs.build-state-machine.result != 'failure'
+      }}
+    steps:
+      - name: Create Pull Request
+        run: echo "Create pull request manually..."

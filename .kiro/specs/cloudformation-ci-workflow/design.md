@@ -36,7 +36,7 @@ The workflow is organized into the following logical phases:
 1. **Discovery Phase**: Environment validation, change detection, and service discovery
 2. **Validation Phase**: Template validation, linting, and security scanning  
 3. **Build Phase**: Conditional building of Lambda packages, Glue scripts, and other artifacts
-4. **Deployment Phase**: Resource tagging, change set creation, cost analysis, and deployment
+4. **Deployment Phase**: CloudFormation stack deployment and management
 5. **Cleanup Phase**: Automated resource cleanup for CI environments
 6. **Integration Phase**: Pull request creation for successful runs
 
@@ -72,10 +72,8 @@ graph TD
     I --> Q
     J --> Q
     
-    Q --> R[CloudFormation Plan]
-    R --> S[Infra Cost]
-    S --> T[CloudFormation Apply]
-    T --> U[CloudFormation Destroy]
+    Q --> R[CloudFormation Apply]
+    R --> S[CloudFormation Destroy]
     
     L --> V[Create Pull Request]
     N --> V
@@ -311,7 +309,7 @@ All architectural components have been successfully implemented and tested:
 | Discovery Phase | ✅ Complete | All 4 discovery jobs implemented with proper outputs |
 | Validation Phase | ✅ Complete | CloudFormation validation, cfn-lint, and Checkov integration |
 | Build Phase | ✅ Complete | Conditional build jobs for Lambda, Glue, and State Machine |
-| Deployment Phase | ✅ Complete | Full deployment pipeline with parameter override support |
+| Deployment Phase | ✅ Complete | Full deployment pipeline with parameter override support (YOR tagging removed) |
 | Cleanup Phase | ✅ Complete | Automated cleanup with error handling |
 | Integration Phase | ✅ Complete | Pull request automation with workflow summaries |
 
