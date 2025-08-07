@@ -225,7 +225,7 @@ jobs:
       - name: Prepare CloudFormation Parameters
         id: prepare-params
         if: steps.check-artifact.outcome == 'failure'
-        uses: subhamay-bhattacharyya-gha/cfn-stack-params-action@feature/GHA-0009-add-step-to-print-the-out
+        uses: subhamay-bhattacharyya-gha/cfn-stack-params-action@main
         with:
           cfn-directory: ${{ inputs.cfn-directory }}
           ci-build: ${{ inputs.ci-build }}
