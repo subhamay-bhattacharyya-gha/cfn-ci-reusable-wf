@@ -447,7 +447,7 @@ jobs:
 
 
         - name: Deploy CloudFormation Stack
-          uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@feature/GHA-0003-add-tags-to-cloudformatio
+          uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@main
           with: 
             stack-name: ${{ steps.read-params.outputs.stack-name }}
             template-path: ${{ steps.read-params.outputs.template-path }}
