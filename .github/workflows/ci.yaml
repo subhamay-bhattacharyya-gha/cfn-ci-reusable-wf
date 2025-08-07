@@ -477,7 +477,7 @@ jobs:
 
       - name: Read Deployment Parameters
         id: read-params
-        uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@feature/GHA-0003-add-cloudformation-tags-o
+        uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@main
         with:
           artifact-path: './artifacts/deployment.json'
 
