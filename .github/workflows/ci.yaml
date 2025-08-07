@@ -275,7 +275,7 @@ jobs:
           echo "Template Path : ${{ needs.execution-path.outputs.template-path }}"
           
       - name: Validate CloudFormation Templates
-        uses: subhamay-bhattacharyya-gha/cfn-validate-action@feature/GHA-0001-initial-release
+        uses: subhamay-bhattacharyya-gha/cfn-validate-action@main
         with:
           aws-role-arn: ${{ secrets.AWS_ROLE_ARN }}
           cloudformation-dir: ${{ inputs.cfn-directory }}
