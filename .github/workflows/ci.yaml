@@ -409,33 +409,49 @@ jobs:
 
         - name: Read Deployment Parameters
           id: read-params
-          uses: subhamay-bhattacharyya-gha/cfn-read-deployment-params-action@feature/GHA-0003-add-cloudformation-tags-o
-          with:
-            artifact-path: './artifacts/deployment.json'
-
-        - name: Print the Deployment Parameters
-          id: print-params
           shell: bash
           run: |
-            echo "📋 CloudFormation Deployment Parameters Summary"
-            echo "=============================================="
-            echo "Stack Name: ${{ env.DEPLOYMENT_STACK_NAME }}"
-            echo "Template Path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}"
-            echo "Parameters: ${{ env.DEPLOYMENT_PARAMETERS }}"
+            echo "📋 Reading deployment parameters from artifact..."
             
-            # Print CloudFormation Tags from step outputs
-            if [ "${{ steps.read-params.outputs.cloudformation-tags }}" != "" ] && [ "${{ steps.read-params.outputs.cloudformation-tags }}" != "null" ]; then
-              echo "CloudFormation Tags: ${{ steps.read-params.outputs.cloudformation-tags }}"
+            if [ -f "./artifacts/deployment.json" ]; then
+              echo "✅ Found deployment.json file"
+              cat ./artifacts/deployment.json
+              
+              # Extract values from JSON
+              PARAMETERS=$(jq -c '.parameters' ./artifacts/deployment.json)
+              STACK_NAME=$(jq -r '."stack-name"' ./artifacts/deployment.json)
+              TEMPLATE_PATH=$(jq -r '."template-path"' ./artifacts/deployment.json)
+              TAGS=$(jq -c '.tags // {}' ./artifacts/deployment.json)
+              
+              echo "📋 Extracted values from artifact:"
+              echo "Parameters: $PARAMETERS"
+              echo "Stack Name: $STACK_NAME"
+              echo "Template Path: $TEMPLATE_PATH"
+              echo "Tags: $TAGS"
+              
+              # Set as environment variables for use in subsequent steps
+              echo "DEPLOYMENT_PARAMETERS=$PARAMETERS" >> $GITHUB_ENV
+              echo "DEPLOYMENT_STACK_NAME=$STACK_NAME" >> $GITHUB_ENV
+              echo "DEPLOYMENT_TEMPLATE_PATH=$TEMPLATE_PATH" >> $GITHUB_ENV
+              echo "DEPLOYMENT_TAGS=$TAGS" >> $GITHUB_ENV
+              
+              # Set as step outputs
+              echo "parameters=$PARAMETERS" >> $GITHUB_OUTPUT
+              echo "stack-name=$STACK_NAME" >> $GITHUB_OUTPUT
+              echo "template-path=$TEMPLATE_PATH" >> $GITHUB_OUTPUT
+              echo "cloudformation-tags=$TAGS" >> $GITHUB_OUTPUT
             else
-              echo "CloudFormation Tags: No tags available"
+              echo "❌ deployment.json file not found in artifact"
+              exit 1
             fi
-            
+
+
         - name: Deploy CloudFormation Stack
           uses: subhamay-bhattacharyya-gha/cfn-create-stack-action@feature/GHA-0003-add-tags-to-cloudformatio
           with: 
-            stack-name: ${{ env.DEPLOYMENT_STACK_NAME }}
-            template-path: ${{ env.DEPLOYMENT_TEMPLATE_PATH }}
-            deployment-parameters: ${{ env.DEPLOYMENT_PARAMETERS }}
+            stack-name: ${{ steps.read-params.outputs.stack-name }}
+            template-path: ${{ steps.read-params.outputs.template-path }}
+            deployment-parameters: ${{ steps.read-params.outputs.parameters }}
             cloudformation-tags: ${{ steps.read-params.outputs.cloudformation-tags }} 
 
   cloudformation-delete:
