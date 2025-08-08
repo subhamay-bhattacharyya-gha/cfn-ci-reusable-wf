@@ -77,7 +77,7 @@ jobs:
     steps:
       - name: Detect repository changes
         id: repo-changes
-        uses: subhamay-bhattacharyya-gha/list-updated-files-action@main
+        uses: subhamay-bhattacharyya-gha/list-updated-files-action@bug/GHA-0007-not-identifying-changes-o
 
   detect-services:
     name: "🔎 Detect Services"
